@@ -25,6 +25,10 @@ class RemoteDataSource implements DataSource {
     }
   }
 }
-// class LocalDataSource implements DataSource {
-//   @override
-// }
+
+class LocalDataSource implements DataSource {
+  @override
+  Future<List<Song>?> loadData() {
+    throw UnimplementedError();
+  }
+}
