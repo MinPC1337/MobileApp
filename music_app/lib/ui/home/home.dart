@@ -100,6 +100,12 @@ class _HomeTabPageState extends State<HomeTabPage> {
     return Scaffold(body: getbody());
   }
 
+  @override
+  void dispose() {
+    _viewModel.songStream.close();
+    super.dispose();
+  }
+
   Widget getbody() {
     bool showLoading = songs.isEmpty;
     if (showLoading) {
@@ -132,7 +138,7 @@ class _HomeTabPageState extends State<HomeTabPage> {
   }
 
   Widget getRow(int index) {
-    return Text(songs[index].title);
+    return _SongItemSection(parent: this, song: songs[index]);
   }
 
   void observeData() {
@@ -141,5 +147,38 @@ class _HomeTabPageState extends State<HomeTabPage> {
         songs.addAll(songList);
       });
     });
+  }
+}
+
+class _SongItemSection extends StatelessWidget {
+  const _SongItemSection({required this.parent, required this.song});
+
+  final _HomeTabPageState parent;
+  final Song song;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.only(left: 24, right: 8),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: FadeInImage.assetNetwork(
+          placeholder: 'assets/image.png',
+          image: song.image,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          imageErrorBuilder: (context, error, stackTrace) {
+            return Image.asset('assets/image.png', width: 48, height: 48);
+          },
+        ),
+      ),
+      title: Text(song.title),
+      subtitle: Text(song.artist),
+      trailing: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.more_horiz),
+      ),
+    );
   }
 }
