@@ -6,6 +6,8 @@ import 'package:music_app/ui/home/viewmodel.dart';
 import 'package:music_app/ui/setting/setting.dart';
 import 'package:music_app/ui/user/user.dart';
 
+import '../now_playing/playing.dart';
+
 class MusicApp extends StatelessWidget {
   const MusicApp({super.key});
 
@@ -148,6 +150,45 @@ class _HomeTabPageState extends State<HomeTabPage> {
       });
     });
   }
+
+  void showBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          child: Container(
+            height: 400,
+            color: Colors.grey,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Modal Bottom Sheet'),
+                  ElevatedButton(
+                    child: const Text('Close Bottom Sheet'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void navigate(Song song) {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) {
+          return NowPlaying(songs: songs, playingSong: song);
+        },
+      ),
+    );
+  }
 }
 
 class _SongItemSection extends StatelessWidget {
@@ -176,9 +217,14 @@ class _SongItemSection extends StatelessWidget {
       title: Text(song.title),
       subtitle: Text(song.artist),
       trailing: IconButton(
-        onPressed: () {},
+        onPressed: () {
+          parent.showBottomSheet();
+        },
         icon: const Icon(Icons.more_horiz),
       ),
+      onTap: () {
+        parent.navigate(song);
+      },
     );
   }
 }
