@@ -126,9 +126,56 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                 ),
                 child: _progressBar(),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 36,
+                  vertical: 16,
+                ),
+                child: _mediaButton(),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _mediaButton() {
+    return SizedBox(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          MediaButtonControl(
+            funtion: null,
+            icon: Icons.shuffle,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 24,
+          ),
+          MediaButtonControl(
+            funtion: null,
+            icon: Icons.skip_previous,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 36,
+          ),
+          MediaButtonControl(
+            funtion: null,
+            icon: Icons.play_arrow_sharp,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 48,
+          ),
+          MediaButtonControl(
+            funtion: null,
+            icon: Icons.skip_next,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 36,
+          ),
+          MediaButtonControl(
+            funtion: null,
+            icon: Icons.repeat,
+            color: Theme.of(context).colorScheme.secondary,
+            size: 24,
+          ),
+        ],
       ),
     );
   }
@@ -147,6 +194,35 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           buffered: buffered,
         );
       },
+    );
+  }
+}
+
+class MediaButtonControl extends StatefulWidget {
+  const MediaButtonControl({
+    super.key,
+    required this.funtion,
+    required this.icon,
+    required this.color,
+    required this.size,
+  });
+  final void Function()? funtion;
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  State<StatefulWidget> createState() => _MediaButtonControlState();
+}
+
+class _MediaButtonControlState extends State<MediaButtonControl> {
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: widget.funtion,
+      icon: Icon(widget.icon),
+      color: widget.color,
+      iconSize: widget.size,
     );
   }
 }
