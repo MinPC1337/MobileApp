@@ -27,10 +27,27 @@ class NowPlayingPage extends StatefulWidget {
   State<NowPlayingPage> createState() => _NowPlayingPageState();
 }
 
-class _NowPlayingPageState extends State<NowPlayingPage> {
+class _NowPlayingPageState extends State<NowPlayingPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _imageAnimationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    );
+    _imageAnimationController.repeat();
+  }
+
   @override
   Widget build(BuildContext context) {
-    //
+    final screenWidth = MediaQuery.of(context).size.width;
+    //final screenHeight = MediaQuery.of(context).size.height;
+    const delta = 64;
+    final radious = (screenWidth - delta) / 2;
+
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Now Playing'),
@@ -45,6 +62,28 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               const SizedBox(height: 16),
               const Text('_ ___ _'),
               const SizedBox(height: 48),
+              RotationTransition(
+                turns: Tween(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(_imageAnimationController),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(radious),
+                  child: FadeInImage.assetNetwork(
+                    placeholder: 'assets/image.png',
+                    image: widget.playingSong.image,
+                    width: radious * 2,
+                    height: radious * 2,
+                    fit: BoxFit.cover,
+                    imageErrorBuilder: (context, error, stackTrace) =>
+                        Image.asset(
+                          'assets/image.png',
+                          width: radious * 2,
+                          height: radious * 2,
+                        ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
