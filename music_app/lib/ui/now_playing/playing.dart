@@ -36,7 +36,19 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
         middle: const Text('Now Playing'),
         trailing: IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz)),
       ),
-      child: Center(child: const Text('Now Playing Page')),
+      child: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(widget.playingSong.album),
+              const SizedBox(height: 16),
+              const Text('_ ___ _'),
+              const SizedBox(height: 48),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
