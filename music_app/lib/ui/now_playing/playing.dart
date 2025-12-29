@@ -1,4 +1,5 @@
 // import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:music_app/data/model/song.dart';
 
@@ -29,6 +30,13 @@ class NowPlayingPage extends StatefulWidget {
 class _NowPlayingPageState extends State<NowPlayingPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: Text('Now Playing Page')));
+    //
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Now Playing'),
+        trailing: IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz)),
+      ),
+      child: Center(child: const Text('Now Playing Page')),
+    );
   }
 }
