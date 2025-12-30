@@ -75,7 +75,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(widget.playingSong.album),
+              Text(_song.album),
               const SizedBox(height: 16),
               const Text('_ ___ _'),
               const SizedBox(height: 48),
@@ -88,7 +88,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                   borderRadius: BorderRadius.circular(radious),
                   child: FadeInImage.assetNetwork(
                     placeholder: 'assets/image.png',
-                    image: widget.playingSong.image,
+                    image: _song.image,
                     width: radious * 2,
                     height: radious * 2,
                     fit: BoxFit.cover,
@@ -113,10 +113,17 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     ),
                     Column(
                       children: [
-                        Text(widget.playingSong.title),
+                        Text(
+                          _song.title,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Text(
-                          widget.playingSong.artist,
+                          _song.artist,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
