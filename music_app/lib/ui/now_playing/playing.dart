@@ -42,7 +42,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       vsync: this,
       duration: const Duration(seconds: 10),
     );
-    _imageAnimationController.repeat();
+    // _imageAnimationController.repeat();
     _audioPlayerManager = AudioPlayerManager(
       songUrl: widget.playingSong.source,
     );
@@ -195,6 +195,13 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           progress: progress,
           total: total,
           buffered: buffered,
+          onSeek: _audioPlayerManager.player.seek,
+          barHeight: 5.0,
+          // baseBarColor: Colors.deepPurple,
+          thumbColor: Colors.deepPurple,
+          thumbRadius: 10.0,
+          bufferedBarColor: Colors.grey,
+          barCapShape: BarCapShape.round,
         );
       },
     );
