@@ -36,10 +36,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   late AudioPlayerManager _audioPlayerManager;
   late int _selectedItemIndex;
   late Song _song;
+  late double _currentAnimationPosition;
 
   @override
   void initState() {
     super.initState();
+    _currentAnimationPosition = 0.0;
     _song = widget.playingSong;
     _imageAnimationController = AnimationController(
       vsync: this,
@@ -116,7 +118,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         Text(
                           _song.title,
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -235,6 +237,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           return MediaButtonControl(
             funtion: () {
               _audioPlayerManager.player.play();
+              _imageAnimationController.forward(
+                from: _currentAnimationPosition,
+              );
+              _imageAnimationController.repeat();
             },
             icon: Icons.play_arrow,
             color: Colors.deepPurple,
@@ -244,14 +250,24 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           return MediaButtonControl(
             funtion: () {
               _audioPlayerManager.player.pause();
+              _imageAnimationController.stop();
+              _currentAnimationPosition = _imageAnimationController.value;
             },
             icon: Icons.pause,
             color: Colors.deepPurple,
             size: 48,
           );
         } else {
+          if (processingState == ProcessingState.completed) {
+            _imageAnimationController.stop();
+            _currentAnimationPosition = 0.0;
+          }
           return MediaButtonControl(
             funtion: () {
+              _imageAnimationController.forward(
+                from: _currentAnimationPosition,
+              );
+              _imageAnimationController.repeat();
               _audioPlayerManager.player.seek(Duration.zero);
             },
             icon: Icons.replay,
