@@ -43,6 +43,7 @@ dependencies:
   firebase_analytics: ^12.1.1
   firebase_core: ^4.4.0
   flutter_bloc: ^9.1.1
+  sqflite_common_ffi: ^2.4.0+2
 
 dev_dependencies:
   flutter_test:

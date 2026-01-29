@@ -1,15 +1,15 @@
 import '../entities/transaction_entity.dart';
 import '../repositories/transaction_repository.dart';
 
-class AddTransactionUseCase {
+class UpdateTransactionUseCase {
   final TransactionRepository repository;
 
-  AddTransactionUseCase(this.repository);
+  UpdateTransactionUseCase(this.repository);
 
   Future<void> call(TransactionEntity transaction) async {
     if (transaction.amount <= 0) {
       throw Exception("Số tiền phải lớn hơn 0");
     }
-    return await repository.addTransaction(transaction);
+    return await repository.updateTransaction(transaction);
   }
 }

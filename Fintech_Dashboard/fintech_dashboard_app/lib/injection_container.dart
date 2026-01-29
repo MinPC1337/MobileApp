@@ -8,7 +8,16 @@ import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/transaction_repository.dart';
 import 'domain/usecases/register_user_usecase.dart';
 import 'domain/usecases/sign_in_usecase.dart';
+import 'domain/usecases/get_current_user_usecase.dart';
+import 'domain/usecases/update_transaction_usecase.dart';
+import 'domain/usecases/add_transaction_usecase.dart';
+import 'domain/usecases/delete_transaction_usecase.dart';
+import 'domain/usecases/sign_out_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
+import 'domain/usecases/seed_transactions_usecase.dart';
+import 'domain/usecases/get_transactions_usecase.dart';
+import 'presentation/bloc/dashboard_cubit.dart';
+import 'presentation/bloc/transaction_form_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
 
@@ -20,11 +29,40 @@ Future<void> init() async {
   // -- Auth Feature --
   // Bloc - Sử dụng registerFactory cho Cubit/Bloc để tạo mới mỗi khi cần (tránh giữ state cũ)
   sl.registerFactory(
-    () => AuthCubit(registerUserUseCase: sl(), signInUseCase: sl()),
+    () => AuthCubit(
+      registerUserUseCase: sl(),
+      signInUseCase: sl(),
+      getCurrentUserUseCase: sl(),
+      seedTransactionsUseCase: sl(),
+      signOutUseCase: sl(),
+      transactionRepository: sl(),
+    ),
   );
+  // Đăng ký DashboardCubit
+  sl.registerFactory(
+    () => DashboardCubit(
+      getTransactionsUseCase: sl(),
+      deleteTransactionUseCase: sl(),
+    ),
+  );
+  // Đăng ký TransactionFormCubit
+  sl.registerFactory(
+    () => TransactionFormCubit(
+      addTransactionUseCase: sl(),
+      updateTransactionUseCase: sl(),
+    ),
+  );
+
   // Use cases
   sl.registerLazySingleton(() => RegisterUserUseCase(sl()));
   sl.registerLazySingleton(() => SignInUseCase(sl()));
+  sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
+  sl.registerLazySingleton(() => SignOutUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => AddTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteTransactionUseCase(sl()));
+  sl.registerLazySingleton(() => SeedTransactionsUseCase(sl()));
+  sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
   // Repository
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
 

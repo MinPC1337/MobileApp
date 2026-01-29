@@ -12,7 +12,12 @@
           "package_name": "com.example.fintech_dashboard_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "90155757805-bdtvb26ieaov99cnggqjjmig0ugnionr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDuXEmPWywt00SPjqCbFVjNkIMoxnQQsMs"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "90155757805-bdtvb26ieaov99cnggqjjmig0ugnionr.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "90155757805-ul3gbscu8ap9tga8mi4tggqa5ra37nbc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fintechDashboardApp"
+              }
+            }
+          ]
         }
       }
     }

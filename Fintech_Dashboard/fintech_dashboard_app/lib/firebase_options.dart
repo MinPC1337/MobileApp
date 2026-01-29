@@ -70,6 +70,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '90155757805',
     projectId: 'fintech-app-2ff03',
     storageBucket: 'fintech-app-2ff03.firebasestorage.app',
+    iosClientId: '90155757805-ul3gbscu8ap9tga8mi4tggqa5ra37nbc.apps.googleusercontent.com',
     iosBundleId: 'com.example.fintechDashboardApp',
   );
+
 }

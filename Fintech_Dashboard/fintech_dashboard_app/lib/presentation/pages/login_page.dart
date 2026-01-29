@@ -20,9 +20,7 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(title: const Text("Đăng nhập")),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthSuccess) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
-          } else if (state is AuthFailure) {
+          if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),

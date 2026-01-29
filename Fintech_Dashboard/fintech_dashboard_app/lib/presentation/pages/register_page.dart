@@ -21,12 +21,7 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(title: const Text("Đăng ký tài khoản")),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Đăng ký thành công!")),
-            );
-            Navigator.pushReplacementNamed(context, '/dashboard');
-          } else if (state is AuthFailure) {
+          if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
