@@ -14,7 +14,6 @@ import 'domain/usecases/add_transaction_usecase.dart';
 import 'domain/usecases/delete_transaction_usecase.dart';
 import 'domain/usecases/sign_out_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
-import 'domain/usecases/seed_transactions_usecase.dart';
 import 'domain/usecases/get_transactions_usecase.dart';
 import 'presentation/bloc/dashboard_cubit.dart';
 import 'presentation/bloc/transaction_form_cubit.dart';
@@ -33,7 +32,6 @@ Future<void> init() async {
       registerUserUseCase: sl(),
       signInUseCase: sl(),
       getCurrentUserUseCase: sl(),
-      seedTransactionsUseCase: sl(),
       signOutUseCase: sl(),
       transactionRepository: sl(),
     ),
@@ -61,7 +59,6 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateTransactionUseCase(sl()));
   sl.registerLazySingleton(() => AddTransactionUseCase(sl()));
   sl.registerLazySingleton(() => DeleteTransactionUseCase(sl()));
-  sl.registerLazySingleton(() => SeedTransactionsUseCase(sl()));
   sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
   // Repository
   sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));

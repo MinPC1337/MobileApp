@@ -4,7 +4,6 @@ import 'auth_state.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/register_user_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
-import '../../domain/usecases/seed_transactions_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
@@ -12,7 +11,6 @@ class AuthCubit extends Cubit<AuthState> {
   final RegisterUserUseCase registerUserUseCase;
   final SignInUseCase signInUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
-  final SeedTransactionsUseCase seedTransactionsUseCase;
   final SignOutUseCase signOutUseCase;
   final TransactionRepository transactionRepository;
 
@@ -20,7 +18,6 @@ class AuthCubit extends Cubit<AuthState> {
     required this.registerUserUseCase,
     required this.signInUseCase,
     required this.getCurrentUserUseCase,
-    required this.seedTransactionsUseCase,
     required this.signOutUseCase,
     required this.transactionRepository,
   }) : super(AuthInitial());
@@ -45,8 +42,6 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await registerUserUseCase(email, password, name);
       if (user != null) {
-        // Tự động thêm dữ liệu mẫu cho người dùng mới
-        await seedTransactionsUseCase(user.id);
         emit(AuthSuccess(user));
       } else {
         emit(AuthFailure("Đăng ký không thành công"));
