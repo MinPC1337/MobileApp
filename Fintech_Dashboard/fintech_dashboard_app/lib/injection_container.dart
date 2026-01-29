@@ -15,7 +15,6 @@ import 'domain/usecases/delete_transaction_usecase.dart';
 import 'domain/usecases/sign_out_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
 import 'domain/usecases/get_transactions_usecase.dart';
-import 'presentation/bloc/dashboard_cubit.dart';
 import 'presentation/bloc/transaction_form_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
@@ -34,13 +33,6 @@ Future<void> init() async {
       getCurrentUserUseCase: sl(),
       signOutUseCase: sl(),
       transactionRepository: sl(),
-    ),
-  );
-  // Đăng ký DashboardCubit
-  sl.registerFactory(
-    () => DashboardCubit(
-      getTransactionsUseCase: sl(),
-      deleteTransactionUseCase: sl(),
     ),
   );
   // Đăng ký TransactionFormCubit

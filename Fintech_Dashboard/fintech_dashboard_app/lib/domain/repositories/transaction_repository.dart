@@ -11,8 +11,8 @@ abstract class TransactionRepository {
   Future<void> deleteTransaction(TransactionEntity transaction);
 
   // Lấy danh sách giao dịch từ Local
-  Future<List<TransactionEntity>> getTransactions();
+  Future<List<TransactionEntity>> getTransactions({required String userId});
 
   // Đồng bộ các giao dịch chưa được đẩy lên Cloud
-  Future<void> syncPendingTransactions();
+  Future<void> syncPendingTransactions({required String userId});
 }

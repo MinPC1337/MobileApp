@@ -9,6 +9,8 @@ import 'presentation/bloc/auth_cubit.dart';
 import 'presentation/bloc/dashboard_cubit.dart';
 import 'presentation/bloc/auth_state.dart';
 import 'presentation/pages/dashboard_page.dart';
+import 'domain/usecases/get_transactions_usecase.dart';
+import 'domain/usecases/delete_transaction_usecase.dart';
 // import 'presentation/pages/add_edit_transaction_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/register_page.dart';
@@ -63,7 +65,11 @@ class AuthGate extends StatelessWidget {
         if (state is AuthSuccess) {
           // Nếu đã xác thực, cung cấp DashboardCubit và hiển thị DashboardPage
           return BlocProvider(
-            create: (_) => di.sl<DashboardCubit>()..loadDashboardData(),
+            create: (_) => DashboardCubit(
+              getTransactionsUseCase: di.sl<GetTransactionsUseCase>(),
+              deleteTransactionUseCase: di.sl<DeleteTransactionUseCase>(),
+              userId: state.user.id,
+            )..loadDashboardData(),
             child: const DashboardPage(),
           );
         } else if (state is AuthUnauthenticated || state is AuthFailure) {

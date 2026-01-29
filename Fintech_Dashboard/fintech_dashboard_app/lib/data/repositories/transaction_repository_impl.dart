@@ -113,13 +113,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<void> syncPendingTransactions() async {
-    // 1. Lấy tất cả giao dịch có is_synced = 0
+  Future<void> syncPendingTransactions({required String userId}) async {
+    // 1. Lấy tất cả giao dịch chưa đồng bộ của user hiện tại
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
-      where: 'is_synced = ?',
-      whereArgs: [0],
+      // Lọc theo cả trạng thái chưa đồng bộ và đúng user
+      where: 'is_synced = ? AND user_id = ?',
+      whereArgs: [0, userId],
     );
 
     for (var map in maps) {
@@ -147,10 +148,14 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<List<TransactionEntity>> getTransactions() async {
+  Future<List<TransactionEntity>> getTransactions({
+    required String userId,
+  }) async {
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
+      where: 'user_id = ?', // Chỉ lấy giao dịch của user hiện tại
+      whereArgs: [userId],
       orderBy: 'date DESC',
     );
 

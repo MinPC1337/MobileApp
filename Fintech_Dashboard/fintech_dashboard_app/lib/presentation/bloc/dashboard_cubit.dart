@@ -7,19 +7,22 @@ import '../../domain/usecases/delete_transaction_usecase.dart';
 class DashboardCubit extends Cubit<DashboardState> {
   final GetTransactionsUseCase getTransactionsUseCase;
   final DeleteTransactionUseCase deleteTransactionUseCase;
+  final String _userId;
 
   DashboardCubit({
     required this.getTransactionsUseCase,
     required this.deleteTransactionUseCase,
-  }) : super(const DashboardState());
+    required String userId,
+  }) : _userId = userId,
+       super(const DashboardState());
 
   Future<void> loadDashboardData() async {
     // 1. Bật trạng thái Loading
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
     try {
-      // 2. Lấy dữ liệu thông qua UseCase
-      final transactions = await getTransactionsUseCase();
+      // 2. Lấy dữ liệu thông qua UseCase, sử dụng userId đã lưu
+      final transactions = await getTransactionsUseCase(userId: _userId);
 
       // 3. Tính toán số dư
       double balance = 0;

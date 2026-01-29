@@ -27,6 +27,8 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await getCurrentUserUseCase();
       if (user != null) {
+        // Đồng bộ các giao dịch đang chờ khi khởi động app
+        await transactionRepository.syncPendingTransactions(userId: user.id);
         emit(AuthSuccess(user));
       } else {
         emit(AuthUnauthenticated());
@@ -70,6 +72,8 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await signInUseCase(email, password);
       if (user != null) {
+        // Đồng bộ các giao dịch đang chờ sau khi đăng nhập thành công
+        await transactionRepository.syncPendingTransactions(userId: user.id);
         emit(AuthSuccess(user));
       } else {
         emit(
