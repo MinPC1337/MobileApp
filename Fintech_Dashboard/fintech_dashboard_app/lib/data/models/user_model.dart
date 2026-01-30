@@ -28,4 +28,20 @@ class UserModel extends UserEntity {
       'created_at': createdAt.toIso8601String(),
     };
   }
+
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? currency,
+    DateTime? createdAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      currency: currency ?? this.currency,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

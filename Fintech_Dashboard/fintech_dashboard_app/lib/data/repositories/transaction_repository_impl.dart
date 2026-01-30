@@ -1,14 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../data_sources/local/database_helper.dart';
+import '../data_sources/remote/transaction_remote_data_source.dart';
 import '../models/transaction_model.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final DatabaseHelper dbHelper;
-  final FirebaseFirestore firestore;
+  final TransactionRemoteDataSource remoteDataSource;
 
-  TransactionRepositoryImpl({required this.dbHelper, required this.firestore});
+  TransactionRepositoryImpl({
+    required this.dbHelper,
+    required this.remoteDataSource,
+  });
 
   @override
   Future<void> addTransaction(TransactionEntity transaction) async {
@@ -24,12 +27,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     // 3. ĐỒNG BỘ LÊN MÂY (Firebase)
     try {
-      await firestore
-          .collection('users')
-          .doc(transaction.userId)
-          .collection('transactions')
-          .doc(localId.toString())
-          .set(firestoreMap);
+      // Tạo lại model với ID đã có để gửi lên remote
+      final modelToSync = TransactionModel.fromMap(firestoreMap);
+      await remoteDataSource.addTransaction(modelToSync);
 
       // 4. NẾU THÀNH CÔNG -> Cập nhật lại trạng thái is_synced trong SQLite
       await db.update(
@@ -64,12 +64,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     // 3. Cố gắng cập nhật lên Firestore
     try {
-      await firestore
-          .collection('users')
-          .doc(transaction.userId)
-          .collection('transactions')
-          .doc(transaction.id.toString())
-          .update(transactionModel.toMap());
+      await remoteDataSource.updateTransaction(transactionModel);
 
       // 4. Nếu thành công, cập nhật lại is_synced trong SQLite
       await db.update(
@@ -101,12 +96,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     // Tuy nhiên, với yêu cầu hiện tại, việc xóa trực tiếp và chấp nhận
     // rủi ro mất đồng bộ khi offline là một giải pháp đơn giản hơn.
     try {
-      await firestore
-          .collection('users')
-          .doc(transaction.userId)
-          .collection('transactions')
-          .doc(transaction.id.toString())
-          .delete();
+      await remoteDataSource.deleteTransaction(
+        transaction.userId,
+        transaction.id.toString(),
+      );
     } catch (e) {
       // Bỏ qua lỗi nếu offline. Giao dịch đã bị xóa ở local.
     }
@@ -127,12 +120,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
       final model = TransactionModel.fromMap(map);
       try {
         // Đẩy từng mục lên Firebase
-        await firestore
-            .collection('users')
-            .doc(model.userId)
-            .collection('transactions')
-            .doc(model.id.toString())
-            .set(model.toMap());
+        await remoteDataSource.addTransaction(model);
 
         // Cập nhật lại local
         await db.update(

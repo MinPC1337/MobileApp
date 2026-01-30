@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'data/data_sources/local/database_helper.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/transaction_repository_impl.dart';
+import 'data/data_sources/remote/transaction_remote_data_source.dart';
+import 'data/data_sources/remote/auth_remote_data_source.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/transaction_repository.dart';
 import 'domain/usecases/register_user_usecase.dart';
@@ -52,13 +54,26 @@ Future<void> init() async {
   sl.registerLazySingleton(() => AddTransactionUseCase(sl()));
   sl.registerLazySingleton(() => DeleteTransactionUseCase(sl()));
   sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
+
+  // -- Auth Feature Data Sources --
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(sl()),
+  );
+
   // Repository
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(remoteDataSource: sl(), dbHelper: sl()),
+  );
 
   // -- Transaction Feature --
+  // Data Sources
+  sl.registerLazySingleton<TransactionRemoteDataSource>(
+    () => TransactionRemoteDataSourceImpl(sl()),
+  );
+
   // Khi ứng dụng yêu cầu TransactionRepository, GetIt sẽ trả về TransactionRepositoryImpl
   sl.registerLazySingleton<TransactionRepository>(
-    () => TransactionRepositoryImpl(dbHelper: sl(), firestore: sl()),
+    () => TransactionRepositoryImpl(dbHelper: sl(), remoteDataSource: sl()),
   );
 
   // =================================================================

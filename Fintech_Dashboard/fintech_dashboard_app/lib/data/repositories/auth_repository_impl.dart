@@ -1,15 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../data_sources/local/database_helper.dart';
-import '../models/user_model.dart';
+import '../data_sources/remote/auth_remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuth _firebaseAuth;
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final AuthRemoteDataSource remoteDataSource;
+  final DatabaseHelper dbHelper;
 
-  AuthRepositoryImpl(this._firebaseAuth);
+  AuthRepositoryImpl({required this.remoteDataSource, required this.dbHelper});
 
   @override
   Future<UserEntity?> signUp({
@@ -18,37 +17,21 @@ class AuthRepositoryImpl implements AuthRepository {
     required String name,
   }) async {
     try {
-      // 1. Tạo trên Firebase
-      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      // 1. Tạo trên Firebase thông qua RemoteDataSource
+      final userModel = await remoteDataSource.signUp(email, password, name);
+
+      // 2. Lưu xuống SQLite để dùng offline
+      final db = await dbHelper.database;
+      await db.insert(
+        'users',
+        userModel.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
 
-      if (credential.user != null) {
-        await credential.user!.updateDisplayName(name);
-
-        final userModel = UserModel(
-          id: credential.user!.uid,
-          email: email,
-          displayName: name,
-          currency: 'VND',
-          createdAt: DateTime.now(),
-        );
-
-        // 2. Lưu xuống SQLite để dùng offline
-        final db = await _dbHelper.database;
-        await db.insert(
-          'users',
-          userModel.toMap(),
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
-
-        return userModel;
-      }
+      return userModel;
     } catch (e) {
       throw Exception("Lỗi đăng ký: ${e.toString()}");
     }
-    return null;
   }
 
   @override
@@ -56,58 +39,39 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final credential = await _firebaseAuth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
-    if (credential.user != null) {
-      // Lấy từ SQLite hoặc tạo model mới từ Firebase User
-      return UserModel(
-        id: credential.user!.uid,
-        email: credential.user!.email!,
-        displayName: credential.user!.displayName ?? '',
-        currency: 'VND',
-        createdAt: DateTime.now(),
-      );
-    }
-    return null;
+    // Gọi RemoteDataSource để đăng nhập
+    return await remoteDataSource.signIn(email, password);
   }
 
   @override
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    await remoteDataSource.signOut();
   }
 
   @override
   Future<UserEntity?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
-    if (firebaseUser == null) return null;
+    // Lấy user từ Remote (Firebase)
+    final remoteUser = await remoteDataSource.getCurrentUser();
+    if (remoteUser == null) return null;
 
     // Ưu tiên lấy thông tin từ SQLite để có đầy đủ thuộc tính (currency, v.v.)
-    final db = await _dbHelper.database;
+    final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'users',
       where: 'id = ?',
-      whereArgs: [firebaseUser.uid],
+      whereArgs: [remoteUser.id],
     );
 
     if (maps.isNotEmpty) {
-      return UserModel.fromMap(maps.first);
+      // Nếu có trong DB local thì trả về (ưu tiên)
+      // Có thể thêm logic cập nhật lại từ remoteUser nếu cần
+      return remoteUser; // Hoặc UserModel.fromMap(maps.first)
     }
-    return null;
+    return remoteUser;
   }
 
   @override
   Stream<UserEntity?> get userSession {
-    return _firebaseAuth.authStateChanges().map((firebaseUser) {
-      if (firebaseUser == null) return null;
-      return UserEntity(
-        id: firebaseUser.uid,
-        email: firebaseUser.email!,
-        displayName: firebaseUser.displayName ?? '',
-        currency: 'VND',
-        createdAt: DateTime.now(),
-      );
-    });
+    return remoteDataSource.authStateChanges;
   }
 }
