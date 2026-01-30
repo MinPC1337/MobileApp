@@ -9,6 +9,7 @@ import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_auth_state_stream_usecase.dart';
 import '../../domain/usecases/send_password_reset_email_usecase.dart';
+import '../../domain/usecases/send_email_verification_usecase.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -18,6 +19,7 @@ class AuthCubit extends Cubit<AuthState> {
   final SignOutUseCase signOutUseCase;
   final GetAuthStateStreamUseCase getAuthStateStreamUseCase;
   final SendPasswordResetEmailUseCase sendPasswordResetEmailUseCase;
+  final SendEmailVerificationUseCase sendEmailVerificationUseCase;
   final TransactionRepository transactionRepository;
 
   StreamSubscription<UserEntity?>? _authSubscription;
@@ -29,6 +31,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.signOutUseCase,
     required this.getAuthStateStreamUseCase,
     required this.sendPasswordResetEmailUseCase,
+    required this.sendEmailVerificationUseCase,
     required this.transactionRepository,
   }) : super(AuthInitial());
 
@@ -55,7 +58,11 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await registerUserUseCase(email, password, name);
       if (user != null) {
-        emit(AuthSuccess(user));
+        // Gửi email xác thực
+        await sendEmailVerificationUseCase();
+        // Đăng xuất ngay để người dùng phải đăng nhập lại sau khi xác thực
+        await signOutUseCase();
+        emit(AuthNeedsVerification());
       } else {
         emit(AuthFailure("Đăng ký không thành công"));
       }
@@ -85,9 +92,16 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await signInUseCase(email, password);
       if (user != null) {
-        // Đồng bộ các giao dịch đang chờ sau khi đăng nhập thành công
-        await transactionRepository.syncPendingTransactions(userId: user.id);
-        emit(AuthSuccess(user));
+        if (user.isEmailVerified) {
+          // Đồng bộ các giao dịch đang chờ sau khi đăng nhập thành công
+          await transactionRepository.syncPendingTransactions(userId: user.id);
+          emit(AuthSuccess(user));
+        } else {
+          // Nếu chưa xác thực email, đăng xuất và báo lỗi
+          await signOutUseCase();
+          // Chuyển sang trạng thái cần xác thực để UI điều hướng sang trang thông báo
+          emit(AuthNeedsVerification());
+        }
       } else {
         emit(
           AuthFailure("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."),

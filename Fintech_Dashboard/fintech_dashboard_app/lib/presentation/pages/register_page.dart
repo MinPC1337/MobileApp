@@ -14,6 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +22,9 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(title: const Text("Đăng ký tài khoản")),
       body: BlocConsumer<AuthCubit, AuthState>(
         listener: (context, state) {
-          if (state is AuthSuccess) {
-            // Đăng ký thành công -> Quay về màn hình gốc (Dashboard do AuthGate quản lý)
-            Navigator.of(context).popUntil((route) => route.isFirst);
+          if (state is AuthNeedsVerification) {
+            // Chuyển hướng sang trang thông báo xác thực email
+            Navigator.pushNamed(context, '/verify_email');
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -48,8 +49,20 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(labelText: "Mật khẩu"),
-                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Mật khẩu",
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
                 ),
                 const SizedBox(height: 30),
                 state is AuthLoading

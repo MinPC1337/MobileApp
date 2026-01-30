@@ -85,6 +85,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> sendEmailVerification() async {
+    await remoteDataSource.sendEmailVerification();
+  }
+
+  @override
   Stream<UserEntity?> get userSession {
     return remoteDataSource.authStateChanges;
   }

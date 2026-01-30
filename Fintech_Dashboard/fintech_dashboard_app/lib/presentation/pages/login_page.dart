@@ -28,6 +28,9 @@ class _LoginPageState extends State<LoginPage> {
                 backgroundColor: Colors.red,
               ),
             );
+          } else if (state is AuthNeedsVerification) {
+            // Nếu tài khoản chưa xác thực, chuyển hướng sang trang thông báo
+            Navigator.pushNamed(context, '/verify_email');
           }
         },
         builder: (context, state) {

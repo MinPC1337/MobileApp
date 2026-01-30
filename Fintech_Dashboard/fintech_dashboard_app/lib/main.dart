@@ -15,6 +15,7 @@ import 'domain/usecases/delete_transaction_usecase.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/register_page.dart';
 import 'presentation/pages/forgot_password_page.dart';
+import 'presentation/pages/email_verification_page.dart';
 
 void main() async {
   // 1. Đảm bảo các plugin hệ thống đã sẵn sàng
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
           // nhưng vẫn giữ lại để phòng trường hợp điều hướng tường minh.
           '/dashboard': (context) => const DashboardPage(),
           '/forgot_password': (context) => const ForgotPasswordPage(),
+          '/verify_email': (context) => const EmailVerificationPage(),
         },
       ),
     );

@@ -6,6 +6,7 @@ class UserEntity extends Equatable {
   final String displayName;
   final String currency;
   final DateTime createdAt;
+  final bool isEmailVerified;
 
   const UserEntity({
     required this.id,
@@ -13,8 +14,16 @@ class UserEntity extends Equatable {
     required this.displayName,
     required this.currency,
     required this.createdAt,
+    this.isEmailVerified = false,
   });
 
   @override
-  List<Object?> get props => [id, email, displayName, currency, createdAt];
+  List<Object?> get props => [
+    id,
+    email,
+    displayName,
+    currency,
+    createdAt,
+    isEmailVerified,
+  ];
 }

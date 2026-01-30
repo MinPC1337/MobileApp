@@ -7,6 +7,7 @@ abstract class AuthRemoteDataSource {
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
   Future<void> sendPasswordResetEmail(String email);
+  Future<void> sendEmailVerification();
   Stream<UserModel?> get authStateChanges;
 }
 
@@ -24,6 +25,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       currency: 'VND',
       createdAt:
           DateTime.now(), // Lưu ý: Firebase Auth user không chứa ngày tạo theo format ta cần, tạm thời lấy now hoặc xử lý sau
+      isEmailVerified: user.emailVerified,
     );
   }
 
@@ -71,6 +73,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       'vi',
     ); // Thiết lập ngôn ngữ tiếng Việt cho email
     await firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    final user = firebaseAuth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
   }
 
   @override

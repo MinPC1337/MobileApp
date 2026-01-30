@@ -20,6 +20,9 @@ abstract class AuthRepository {
   // Gửi email khôi phục mật khẩu
   Future<void> sendPasswordResetEmail({required String email});
 
+  // Gửi email xác thực tài khoản
+  Future<void> sendEmailVerification();
+
   // Kiểm tra trạng thái đăng nhập (để quyết định mở màn hình Login hay Dashboard)
   Stream<UserEntity?> get userSession;
 }

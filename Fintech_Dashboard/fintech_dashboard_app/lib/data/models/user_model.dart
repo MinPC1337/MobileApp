@@ -7,6 +7,7 @@ class UserModel extends UserEntity {
     required super.displayName,
     required super.currency,
     required super.createdAt,
+    required super.isEmailVerified,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -16,6 +17,8 @@ class UserModel extends UserEntity {
       displayName: map['display_name'],
       currency: map['currency'],
       createdAt: DateTime.parse(map['created_at']),
+      isEmailVerified:
+          true, // Mặc định là true khi lấy từ SQLite (giả định đã login thành công trước đó)
     );
   }
 
@@ -35,6 +38,7 @@ class UserModel extends UserEntity {
     String? displayName,
     String? currency,
     DateTime? createdAt,
+    bool? isEmailVerified,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -42,6 +46,7 @@ class UserModel extends UserEntity {
       displayName: displayName ?? this.displayName,
       currency: currency ?? this.currency,
       createdAt: createdAt ?? this.createdAt,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
     );
   }
 }
