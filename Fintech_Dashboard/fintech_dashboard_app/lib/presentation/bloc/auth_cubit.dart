@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_state.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/register_user_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
+import '../../domain/usecases/get_auth_state_stream_usecase.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -12,30 +15,35 @@ class AuthCubit extends Cubit<AuthState> {
   final SignInUseCase signInUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final SignOutUseCase signOutUseCase;
+  final GetAuthStateStreamUseCase getAuthStateStreamUseCase;
   final TransactionRepository transactionRepository;
+
+  StreamSubscription<UserEntity?>? _authSubscription;
 
   AuthCubit({
     required this.registerUserUseCase,
     required this.signInUseCase,
     required this.getCurrentUserUseCase,
     required this.signOutUseCase,
+    required this.getAuthStateStreamUseCase,
     required this.transactionRepository,
   }) : super(AuthInitial());
 
   // Hàm kiểm tra trạng thái đăng nhập khi ứng dụng khởi động
   Future<void> checkAuthStatus() async {
-    try {
-      final user = await getCurrentUserUseCase();
+    // Hủy đăng ký cũ nếu có để tránh rò rỉ bộ nhớ
+    await _authSubscription?.cancel();
+
+    // Lắng nghe luồng sự kiện thay đổi trạng thái đăng nhập (Login/Logout/Khôi phục session)
+    _authSubscription = getAuthStateStreamUseCase().listen((user) async {
       if (user != null) {
         // Đồng bộ các giao dịch đang chờ khi khởi động app
         await transactionRepository.syncPendingTransactions(userId: user.id);
-        emit(AuthSuccess(user));
+        if (!isClosed) emit(AuthSuccess(user));
       } else {
-        emit(AuthUnauthenticated());
+        if (!isClosed) emit(AuthUnauthenticated());
       }
-    } catch (e) {
-      emit(AuthUnauthenticated());
-    }
+    });
   }
 
   // Hàm đăng ký
@@ -56,6 +64,8 @@ class AuthCubit extends Cubit<AuthState> {
         message = 'Email này đã được sử dụng.';
       } else if (e.code == 'invalid-email') {
         message = 'Địa chỉ email không hợp lệ.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Cần có kết nối internet để đăng ký.';
       }
       emit(AuthFailure(message));
     } catch (e) {
@@ -90,6 +100,8 @@ class AuthCubit extends Cubit<AuthState> {
         message = 'Định dạng email không hợp lệ.';
       } else if (e.code == 'too-many-requests') {
         message = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Cần có kết nối internet để đăng nhập.';
       }
       emit(AuthFailure(message));
     } catch (e) {
@@ -106,5 +118,11 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(AuthFailure("Đăng xuất thất bại"));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
   }
 }

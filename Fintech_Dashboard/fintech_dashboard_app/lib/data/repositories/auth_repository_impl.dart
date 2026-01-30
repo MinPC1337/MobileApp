@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -29,6 +30,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       return userModel;
+    } on FirebaseAuthException {
+      rethrow; // Ném lại lỗi Firebase để Cubit xử lý (vd: mất mạng, email trùng)
     } catch (e) {
       throw Exception("Lỗi đăng ký: ${e.toString()}");
     }
