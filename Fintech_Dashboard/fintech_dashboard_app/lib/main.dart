@@ -14,6 +14,7 @@ import 'domain/usecases/delete_transaction_usecase.dart';
 // import 'presentation/pages/add_edit_transaction_page.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/register_page.dart';
+import 'presentation/pages/forgot_password_page.dart';
 
 void main() async {
   // 1. Đảm bảo các plugin hệ thống đã sẵn sàng
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
           // Route dashboard giờ được AuthGate xử lý,
           // nhưng vẫn giữ lại để phòng trường hợp điều hướng tường minh.
           '/dashboard': (context) => const DashboardPage(),
+          '/forgot_password': (context) => const ForgotPasswordPage(),
         },
       ),
     );

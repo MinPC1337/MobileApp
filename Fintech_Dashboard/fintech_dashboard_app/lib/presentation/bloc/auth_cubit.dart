@@ -8,6 +8,7 @@ import '../../domain/usecases/register_user_usecase.dart';
 import '../../domain/usecases/get_current_user_usecase.dart';
 import '../../domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_auth_state_stream_usecase.dart';
+import '../../domain/usecases/send_password_reset_email_usecase.dart';
 import '../../domain/repositories/transaction_repository.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -16,6 +17,7 @@ class AuthCubit extends Cubit<AuthState> {
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final SignOutUseCase signOutUseCase;
   final GetAuthStateStreamUseCase getAuthStateStreamUseCase;
+  final SendPasswordResetEmailUseCase sendPasswordResetEmailUseCase;
   final TransactionRepository transactionRepository;
 
   StreamSubscription<UserEntity?>? _authSubscription;
@@ -26,6 +28,7 @@ class AuthCubit extends Cubit<AuthState> {
     required this.getCurrentUserUseCase,
     required this.signOutUseCase,
     required this.getAuthStateStreamUseCase,
+    required this.sendPasswordResetEmailUseCase,
     required this.transactionRepository,
   }) : super(AuthInitial());
 
@@ -102,6 +105,30 @@ class AuthCubit extends Cubit<AuthState> {
         message = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau.';
       } else if (e.code == 'network-request-failed') {
         message = 'Cần có kết nối internet để đăng nhập.';
+      }
+      emit(AuthFailure(message));
+    } catch (e) {
+      final errorMessage = e.toString().replaceFirst('Exception: ', '');
+      emit(AuthFailure(errorMessage));
+    }
+  }
+
+  // Hàm quên mật khẩu
+  Future<void> resetPassword(String email) async {
+    emit(AuthLoading());
+    try {
+      await sendPasswordResetEmailUseCase(email);
+      emit(AuthPasswordResetSent());
+    } on FirebaseAuthException catch (e) {
+      String message = "Không thể gửi email khôi phục.";
+      if (e.code == 'user-not-found') {
+        message = 'Email này chưa được đăng ký.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Định dạng email không hợp lệ.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Cần có kết nối internet để gửi yêu cầu.';
       }
       emit(AuthFailure(message));
     } catch (e) {

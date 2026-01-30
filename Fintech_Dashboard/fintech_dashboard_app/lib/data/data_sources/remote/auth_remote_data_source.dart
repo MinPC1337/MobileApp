@@ -6,6 +6,7 @@ abstract class AuthRemoteDataSource {
   Future<UserModel> signIn(String email, String password);
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
+  Future<void> sendPasswordResetEmail(String email);
   Stream<UserModel?> get authStateChanges;
 }
 
@@ -62,6 +63,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return _mapFirebaseUserToModel(user);
     }
     return null;
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    await firebaseAuth.setLanguageCode(
+      'vi',
+    ); // Thiết lập ngôn ngữ tiếng Việt cho email
+    await firebaseAuth.sendPasswordResetEmail(email: email);
   }
 
   @override

@@ -12,6 +12,7 @@ import 'domain/usecases/register_user_usecase.dart';
 import 'domain/usecases/sign_in_usecase.dart';
 import 'domain/usecases/get_current_user_usecase.dart';
 import 'domain/usecases/get_auth_state_stream_usecase.dart';
+import 'domain/usecases/send_password_reset_email_usecase.dart';
 import 'domain/usecases/update_transaction_usecase.dart';
 import 'domain/usecases/add_transaction_usecase.dart';
 import 'domain/usecases/delete_transaction_usecase.dart';
@@ -36,6 +37,7 @@ Future<void> init() async {
       getCurrentUserUseCase: sl(),
       signOutUseCase: sl(),
       getAuthStateStreamUseCase: sl(),
+      sendPasswordResetEmailUseCase: sl(),
       transactionRepository: sl(),
     ),
   );
@@ -52,6 +54,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => SignInUseCase(sl()));
   sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
   sl.registerLazySingleton(() => GetAuthStateStreamUseCase(sl()));
+  sl.registerLazySingleton(() => SendPasswordResetEmailUseCase(sl()));
   sl.registerLazySingleton(() => SignOutUseCase(sl()));
   sl.registerLazySingleton(() => UpdateTransactionUseCase(sl()));
   sl.registerLazySingleton(() => AddTransactionUseCase(sl()));

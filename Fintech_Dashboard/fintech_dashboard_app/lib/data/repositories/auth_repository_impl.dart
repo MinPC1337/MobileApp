@@ -74,6 +74,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await remoteDataSource.sendPasswordResetEmail(email);
+    } on FirebaseAuthException {
+      rethrow;
+    } catch (e) {
+      throw Exception("Lỗi gửi email khôi phục: ${e.toString()}");
+    }
+  }
+
+  @override
   Stream<UserEntity?> get userSession {
     return remoteDataSource.authStateChanges;
   }

@@ -13,6 +13,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +42,29 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(labelText: "Mật khẩu"),
-                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Mật khẩu",
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot_password');
+                    },
+                    child: const Text("Quên mật khẩu?"),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 state is AuthLoading
