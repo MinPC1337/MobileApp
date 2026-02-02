@@ -139,6 +139,39 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<List<TransactionEntity>> getTransactions({
     required String userId,
   }) async {
+    // --- BẮT ĐẦU ĐOẠN MÃ MỚI: ĐỒNG BỘ TỪ FIREBASE VỀ LOCAL ---
+    try {
+      // 1. (Tùy chọn) Đẩy các thay đổi chưa đồng bộ lên trước để tránh mất dữ liệu
+      await syncPendingTransactions(userId: userId);
+
+      // 2. Lấy dữ liệu mới nhất từ Firebase
+      // Lưu ý: Bạn cần đảm bảo remoteDataSource có hàm getTransactions(String userId)
+      // trả về List<TransactionModel>
+      final remoteModels = await remoteDataSource.getTransactions(userId);
+
+      final db = await dbHelper.database;
+      await db.transaction((txn) async {
+        // 3. Xóa toàn bộ dữ liệu cũ của user này trong Local DB
+        // (Để đảm bảo những gì đã xóa trên Firebase cũng sẽ mất ở Local)
+        await txn.delete(
+          'transactions',
+          where: 'user_id = ?',
+          whereArgs: [userId],
+        );
+
+        // 4. Chèn lại dữ liệu mới từ Firebase
+        for (var model in remoteModels) {
+          // Đánh dấu là đã đồng bộ (is_synced = 1)
+          final map = model.toMap();
+          map['is_synced'] = 1;
+          await txn.insert('transactions', map);
+        }
+      });
+    } catch (e) {
+      // Nếu mất mạng hoặc lỗi server, bỏ qua và dùng dữ liệu Local cũ (Offline mode)
+      // print("Sync error: $e");
+    }
+
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',

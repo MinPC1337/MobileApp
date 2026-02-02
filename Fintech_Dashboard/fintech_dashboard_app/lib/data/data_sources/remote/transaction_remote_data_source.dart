@@ -5,12 +5,26 @@ abstract class TransactionRemoteDataSource {
   Future<void> addTransaction(TransactionModel transaction);
   Future<void> updateTransaction(TransactionModel transaction);
   Future<void> deleteTransaction(String userId, String transactionId);
+  Future<List<TransactionModel>> getTransactions(String userId);
 }
 
 class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
   final FirebaseFirestore firestore;
 
   TransactionRemoteDataSourceImpl(this.firestore);
+
+  @override
+  Future<List<TransactionModel>> getTransactions(String userId) async {
+    final snapshot = await firestore
+        .collection('users')
+        .doc(userId)
+        .collection('transactions')
+        .get();
+
+    return snapshot.docs
+        .map((doc) => TransactionModel.fromMap(doc.data()))
+        .toList();
+  }
 
   @override
   Future<void> addTransaction(TransactionModel transaction) async {
