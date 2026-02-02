@@ -26,6 +26,8 @@ class TransactionRepositoryImpl implements TransactionRepository {
     final localId = await db.insert('transactions', transactionModel.toMap());
     final firestoreMap = transactionModel.toMap();
     firestoreMap['id'] = localId;
+    firestoreMap['is_synced'] =
+        1; // <--- SỬA: Đánh dấu là 1 trước khi gửi lên Cloud
 
     // 3. ĐỒNG BỘ LÊN MÂY (Firebase)
     try {
@@ -69,8 +71,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     // 3. Cố gắng cập nhật lên Firestore
     try {
+      // Tạo một bản sao map và set is_synced = 1 để gửi lên Cloud
+      final mapToSync = transactionModel.toMap();
+      mapToSync['is_synced'] = 1;
+      final modelToSync = TransactionModel.fromMap(mapToSync);
+
       await remoteDataSource
-          .updateTransaction(transactionModel)
+          .updateTransaction(modelToSync)
           .timeout(const Duration(seconds: 3));
 
       // 4. Nếu thành công, cập nhật lại is_synced trong SQLite
@@ -123,7 +130,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     );
 
     for (var map in maps) {
-      final model = TransactionModel.fromMap(map);
+      // Tạo bản sao map và set is_synced = 1 trước khi gửi
+      final mapToSync = Map<String, dynamic>.from(map);
+      mapToSync['is_synced'] = 1;
+      final model = TransactionModel.fromMap(mapToSync);
       try {
         // Đẩy từng mục lên Firebase
         await remoteDataSource
