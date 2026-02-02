@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:sqflite/sqflite.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../data_sources/local/database_helper.dart';
@@ -29,7 +31,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       // Tạo lại model với ID đã có để gửi lên remote
       final modelToSync = TransactionModel.fromMap(firestoreMap);
-      await remoteDataSource.addTransaction(modelToSync);
+      // Thêm timeout 3s: Nếu mạng lag quá 3s thì bỏ qua, coi như offline
+      await remoteDataSource
+          .addTransaction(modelToSync)
+          .timeout(const Duration(seconds: 3));
 
       // 4. NẾU THÀNH CÔNG -> Cập nhật lại trạng thái is_synced trong SQLite
       await db.update(
@@ -64,7 +69,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     // 3. Cố gắng cập nhật lên Firestore
     try {
-      await remoteDataSource.updateTransaction(transactionModel);
+      await remoteDataSource
+          .updateTransaction(transactionModel)
+          .timeout(const Duration(seconds: 3));
 
       // 4. Nếu thành công, cập nhật lại is_synced trong SQLite
       await db.update(
@@ -96,10 +103,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
     // Tuy nhiên, với yêu cầu hiện tại, việc xóa trực tiếp và chấp nhận
     // rủi ro mất đồng bộ khi offline là một giải pháp đơn giản hơn.
     try {
-      await remoteDataSource.deleteTransaction(
-        transaction.userId,
-        transaction.id.toString(),
-      );
+      await remoteDataSource
+          .deleteTransaction(transaction.userId, transaction.id.toString())
+          .timeout(const Duration(seconds: 3));
     } catch (e) {
       // Bỏ qua lỗi nếu offline. Giao dịch đã bị xóa ở local.
     }
@@ -120,7 +126,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
       final model = TransactionModel.fromMap(map);
       try {
         // Đẩy từng mục lên Firebase
-        await remoteDataSource.addTransaction(model);
+        await remoteDataSource
+            .addTransaction(model)
+            .timeout(const Duration(seconds: 2));
 
         // Cập nhật lại local
         await db.update(
@@ -147,24 +155,33 @@ class TransactionRepositoryImpl implements TransactionRepository {
       // 2. Lấy dữ liệu mới nhất từ Firebase
       // Lưu ý: Bạn cần đảm bảo remoteDataSource có hàm getTransactions(String userId)
       // trả về List<TransactionModel>
-      final remoteModels = await remoteDataSource.getTransactions(userId);
+      final remoteModels = await remoteDataSource
+          .getTransactions(userId)
+          .timeout(const Duration(seconds: 3));
 
       final db = await dbHelper.database;
       await db.transaction((txn) async {
-        // 3. Xóa toàn bộ dữ liệu cũ của user này trong Local DB
-        // (Để đảm bảo những gì đã xóa trên Firebase cũng sẽ mất ở Local)
+        // 3. CHỈ Xóa những dữ liệu ĐÃ ĐỒNG BỘ (is_synced = 1) của user này
+        // Giữ lại các giao dịch chưa đồng bộ (is_synced = 0) để không bị mất khi offline
         await txn.delete(
           'transactions',
-          where: 'user_id = ?',
+          where: 'user_id = ? AND is_synced = 1',
           whereArgs: [userId],
         );
 
-        // 4. Chèn lại dữ liệu mới từ Firebase
+        // 4. Chèn lại dữ liệu mới từ Firebase (Dùng ConflictAlgorithm.replace)
+        // Nếu ID trùng với ID đang có (trường hợp vừa sync xong), nó sẽ ghi đè
         for (var model in remoteModels) {
           // Đánh dấu là đã đồng bộ (is_synced = 1)
           final map = model.toMap();
           map['is_synced'] = 1;
-          await txn.insert('transactions', map);
+
+          // Sử dụng replace để nếu ID đã tồn tại thì cập nhật lại thông tin mới nhất
+          await txn.insert(
+            'transactions',
+            map,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
         }
       });
     } catch (e) {
