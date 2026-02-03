@@ -10,6 +10,9 @@ class TransactionModel extends TransactionEntity {
     required super.userId,
     super.isSynced,
     required super.updatedAt,
+    super.categoryName,
+    super.categoryType,
+    super.categoryIcon,
   });
 
   // Chuyển từ Map (Dữ liệu từ SQLite) sang Model
@@ -23,6 +26,9 @@ class TransactionModel extends TransactionEntity {
       userId: map['user_id'],
       isSynced: map['is_synced'] == 1, // Chuyển Integer 0/1 sang Boolean
       updatedAt: DateTime.parse(map['updated_at']),
+      categoryName: map['category_name'],
+      categoryType: map['category_type'],
+      categoryIcon: map['category_icon'],
     );
   }
 
@@ -51,6 +57,9 @@ class TransactionModel extends TransactionEntity {
       userId: entity.userId,
       isSynced: entity.isSynced,
       updatedAt: entity.updatedAt,
+      categoryName: entity.categoryName,
+      categoryType: entity.categoryType,
+      categoryIcon: entity.categoryIcon,
     );
   }
 }

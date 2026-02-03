@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dashboard_state.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../../domain/usecases/get_transactions_usecase.dart';
-import '../../domain/usecases/delete_transaction_usecase.dart';
+import '../../domain/usecases/transactions/get_transactions_usecase.dart';
+import '../../domain/usecases/transactions/delete_transaction_usecase.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
   final GetTransactionsUseCase getTransactionsUseCase;
@@ -27,8 +27,9 @@ class DashboardCubit extends Cubit<DashboardState> {
       // 3. Tính toán số dư
       double balance = 0;
       for (var tx in transactions) {
-        // Logic mẫu: Giả định CategoryId 1 là Thu nhập (Income)
-        if (tx.categoryId == 1) {
+        // Cải tiến: Dựa vào 'type' của category thay vì ID cứng.
+        // Giả định TransactionEntity giờ có thuộc tính 'categoryType'.
+        if (tx.categoryType == 'income') {
           balance += tx.amount;
         } else {
           balance -= tx.amount;
@@ -66,7 +67,8 @@ class DashboardCubit extends Cubit<DashboardState> {
 
       double newBalance = 0;
       for (var tx in updatedTransactions) {
-        if (tx.categoryId == 1) {
+        // Cải tiến: Dựa vào 'type' của category.
+        if (tx.categoryType == 'income') {
           newBalance += tx.amount;
         } else {
           newBalance -= tx.amount;

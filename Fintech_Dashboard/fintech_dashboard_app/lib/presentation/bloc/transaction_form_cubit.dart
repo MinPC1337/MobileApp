@@ -1,9 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/transaction_entity.dart';
-import '../../domain/usecases/add_transaction_usecase.dart';
+import '../../domain/usecases/transactions/add_transaction_usecase.dart';
 // import '../../domain/usecases/delete_transaction_usecase.dart';
 // import '../../domain/usecases/get_transactions_usecase.dart';
-import '../../domain/usecases/update_transaction_usecase.dart';
+import '../../domain/usecases/transactions/update_transaction_usecase.dart';
 import 'transaction_form_state.dart';
 
 class TransactionFormCubit extends Cubit<TransactionFormState> {

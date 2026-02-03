@@ -9,6 +9,9 @@ class TransactionEntity extends Equatable {
   final String userId;
   final bool isSynced;
   final DateTime updatedAt;
+  final String? categoryName;
+  final String? categoryType;
+  final String? categoryIcon;
 
   const TransactionEntity({
     this.id,
@@ -19,6 +22,9 @@ class TransactionEntity extends Equatable {
     required this.userId,
     this.isSynced = false,
     required this.updatedAt,
+    this.categoryName,
+    this.categoryType,
+    this.categoryIcon,
   });
 
   @override
@@ -31,5 +37,8 @@ class TransactionEntity extends Equatable {
     userId,
     isSynced,
     updatedAt,
+    categoryName,
+    categoryType,
+    categoryIcon,
   ];
 }

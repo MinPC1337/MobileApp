@@ -23,8 +23,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       email: user.email ?? '',
       displayName: user.displayName ?? '',
       currency: 'VND',
-      createdAt:
-          DateTime.now(), // Lưu ý: Firebase Auth user không chứa ngày tạo theo format ta cần, tạm thời lấy now hoặc xử lý sau
+      createdAt: DateTime.now(),
       isEmailVerified: user.emailVerified,
     );
   }

@@ -200,11 +200,22 @@ class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     final db = await dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'transactions',
-      where: 'user_id = ?', // Chỉ lấy giao dịch của user hiện tại
-      whereArgs: [userId],
-      orderBy: 'date DESC',
+    // Thay đổi: Sử dụng rawQuery với JOIN để lấy thông tin danh mục.
+    // Giả định rằng TransactionModel và TransactionEntity đã được cập nhật
+    // để chứa các trường như categoryName, categoryType.
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
+      SELECT
+        t.*,
+        c.name as category_name,
+        c.type as category_type,
+        c.icon as category_icon
+      FROM transactions t
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.user_id = ?
+      ORDER BY t.date DESC
+    ''',
+      [userId],
     );
 
     return maps.map((map) => TransactionModel.fromMap(map)).toList();

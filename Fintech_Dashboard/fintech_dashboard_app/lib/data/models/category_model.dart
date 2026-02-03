@@ -31,4 +31,15 @@ class CategoryModel extends CategoryEntity {
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  factory CategoryModel.fromEntity(CategoryEntity entity) {
+    return CategoryModel(
+      id: entity.id,
+      name: entity.name,
+      type: entity.type,
+      icon: entity.icon,
+      userId: entity.userId,
+      updatedAt: entity.updatedAt,
+    );
+  }
 }
