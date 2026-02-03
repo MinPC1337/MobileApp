@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/category_entity.dart';
 import '../../injection_container.dart' as di;
 import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
@@ -43,14 +44,70 @@ class CategoryManagementPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final category = state.categories[index];
                 final isIncome = category.type == 'income';
-                return ListTile(
-                  leading: Icon(
-                    isIncome ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-                    color: isIncome ? Colors.green : Colors.red,
+                final isDefault = category.userId == null;
+
+                return Dismissible(
+                  key: ValueKey(category.id),
+                  direction: isDefault
+                      ? DismissDirection.none
+                      : DismissDirection.endToStart,
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: const Icon(Icons.delete, color: Colors.white),
                   ),
-                  title: Text(category.name),
-                  subtitle: Text(
-                    category.userId == null ? 'Mặc định' : 'Cá nhân',
+                  confirmDismiss: (direction) async {
+                    return await showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Xác nhận xóa'),
+                        content: const Text(
+                          'Bạn có chắc muốn xóa danh mục này?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Hủy'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text(
+                              'Xóa',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onDismissed: (direction) {
+                    context.read<CategoryCubit>().deleteCategory(category);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Đã xóa danh mục')),
+                    );
+                  },
+                  child: ListTile(
+                    leading: Icon(
+                      isIncome
+                          ? Icons.arrow_circle_up
+                          : Icons.arrow_circle_down,
+                      color: isIncome ? Colors.green : Colors.red,
+                    ),
+                    title: Text(category.name),
+                    subtitle: Text(isDefault ? 'Mặc định' : 'Cá nhân'),
+                    trailing: isDefault
+                        ? null
+                        : const Icon(Icons.edit, size: 20),
+                    onTap: () {
+                      if (!isDefault) {
+                        _showAddCategoryDialog(
+                          context,
+                          context.read<CategoryCubit>(),
+                          category: category,
+                        );
+                      }
+                    },
                   ),
                 );
               },
@@ -71,16 +128,20 @@ class CategoryManagementPage extends StatelessWidget {
     );
   }
 
-  void _showAddCategoryDialog(BuildContext context, CategoryCubit cubit) {
+  void _showAddCategoryDialog(
+    BuildContext context,
+    CategoryCubit cubit, {
+    CategoryEntity? category,
+  }) {
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    String type = 'expense'; // Loại mặc định
+    final nameController = TextEditingController(text: category?.name ?? '');
+    String type = category?.type ?? 'expense'; // Loại mặc định
 
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Thêm Danh mục mới'),
+          title: Text(category == null ? 'Thêm Danh mục mới' : 'Sửa Danh mục'),
           content: Form(
             key: formKey,
             child: Column(
@@ -123,15 +184,28 @@ class CategoryManagementPage extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 if (formKey.currentState!.validate()) {
-                  cubit.addCategory(
-                    name: nameController.text,
-                    type: type,
-                    icon: 'default',
-                  );
+                  if (category == null) {
+                    cubit.addCategory(
+                      name: nameController.text,
+                      type: type,
+                      icon: 'default',
+                    );
+                  } else {
+                    cubit.updateCategory(
+                      CategoryEntity(
+                        id: category.id,
+                        name: nameController.text,
+                        type: type,
+                        icon: category.icon,
+                        userId: category.userId,
+                        updatedAt: DateTime.now(),
+                      ),
+                    );
+                  }
                   Navigator.of(dialogContext).pop();
                 }
               },
-              child: const Text('Thêm'),
+              child: Text(category == null ? 'Thêm' : 'Lưu'),
             ),
           ],
         );

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../injection_container.dart' as di;
+import '../../domain/entities/transaction_entity.dart';
 import '../bloc/dashboard_cubit.dart';
 import '../bloc/dashboard_state.dart';
-import '../bloc/transaction_form_cubit.dart';
 import 'add_edit_transaction_page.dart';
 
 class TransactionPage extends StatelessWidget {
@@ -13,69 +12,157 @@ class TransactionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
-        if (state.isLoading && state.transactions.isEmpty) {
+        if (state.isLoading) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state.errorMessage != null) {
+          return Center(child: Text(state.errorMessage!));
         }
 
         if (state.transactions.isEmpty) {
           return const Center(child: Text("Chưa có giao dịch nào."));
         }
 
-        return ListView.builder(
-          itemCount: state.transactions.length,
-          itemBuilder: (context, index) {
-            final tx = state.transactions[index];
-            final isIncome = tx.categoryId == 1;
-            return Dismissible(
-              key: Key(tx.id.toString()),
-              direction: DismissDirection.endToStart,
-              onDismissed: (_) {
-                context.read<DashboardCubit>().deleteTransaction(tx);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Đã xóa "${tx.note}"')));
-              },
-              background: Container(
-                color: Colors.red,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              child: InkWell(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) => di.sl<TransactionFormCubit>(),
-                        child: AddEditTransactionPage(transaction: tx),
-                      ),
-                    ),
-                  );
-                  if (result == true) {
-                    if (!context.mounted) return;
-                    context.read<DashboardCubit>().loadDashboardData();
+        // Logic nhóm giao dịch theo danh mục (chuyển từ HomePage sang)
+        final groupedTransactions = <String, List<dynamic>>{};
+        for (final tx in state.transactions) {
+          final categoryName = tx.categoryName ?? 'Chưa phân loại';
+          if (groupedTransactions[categoryName] == null) {
+            groupedTransactions[categoryName] = [];
+          }
+          groupedTransactions[categoryName]!.add(tx);
+        }
+
+        final categoryKeys = groupedTransactions.keys.toList();
+        categoryKeys.sort(); // Sắp xếp tên danh mục A-Z
+
+        return Column(
+          children: [
+            // Có thể thêm bộ lọc thời gian ở đây sau này
+            Expanded(
+              child: ListView.builder(
+                itemCount: categoryKeys.length,
+                itemBuilder: (context, index) {
+                  final categoryName = categoryKeys[index];
+                  final transactionsForCategory =
+                      groupedTransactions[categoryName]!;
+
+                  // Tính tổng tiền cho nhóm này
+                  double categoryTotal = 0;
+                  for (var t in transactionsForCategory) {
+                    if (t.categoryType == 'income') {
+                      categoryTotal += t.amount;
+                    } else {
+                      categoryTotal -= t
+                          .amount; // Chi phí thì trừ đi (hoặc cộng dồn tùy cách hiển thị)
+                    }
                   }
-                },
-                child: ListTile(
-                  leading: Icon(
-                    isIncome ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-                    color: isIncome ? Colors.green : Colors.red,
-                    size: 40,
-                  ),
-                  title: Text(tx.note),
-                  subtitle: Text(tx.date.toString().split(' ')[0]),
-                  trailing: Text(
-                    "${isIncome ? '+' : '-'}${tx.amount.toStringAsFixed(0)}đ",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isIncome ? Colors.green : Colors.red,
+                  // Hiển thị trị tuyệt đối cho đẹp, hoặc hiển thị âm dương tùy ý
+                  final displayTotal = categoryTotal.abs();
+
+                  return ExpansionTile(
+                    title: Text(
+                      categoryName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                  ),
-                ),
+                    subtitle: Text("Tổng: ${displayTotal.toStringAsFixed(0)}đ"),
+                    initiallyExpanded: true,
+                    children: transactionsForCategory.map<Widget>((tx) {
+                      final isIncome = tx.categoryType == 'income';
+                      final color = isIncome ? Colors.green : Colors.red;
+                      final icon = isIncome
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward;
+
+                      // Chức năng vuốt để xóa
+                      return Dismissible(
+                        key: ValueKey(tx.id),
+                        direction: DismissDirection
+                            .endToStart, // Vuốt từ phải sang trái
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        confirmDismiss: (direction) async {
+                          // Hiển thị hộp thoại xác nhận trước khi xóa
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Xác nhận Xóa'),
+                                content: const Text(
+                                  'Bạn có chắc chắn muốn xóa giao dịch này không?',
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('Hủy'),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                  ),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                    ),
+                                    child: const Text('Xóa'),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          return confirmed ?? false;
+                        },
+                        onDismissed: (direction) {
+                          // Gọi cubit để xóa và hiển thị thông báo
+                          context.read<DashboardCubit>().deleteTransaction(
+                            tx as TransactionEntity,
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Đã xóa giao dịch')),
+                          );
+                        },
+                        child: ListTile(
+                          leading: Icon(icon, color: color),
+                          title: Text(
+                            tx.note.isNotEmpty ? tx.note : categoryName,
+                          ),
+                          subtitle: Text(tx.date.toString().split(' ')[0]),
+                          trailing: Text(
+                            "${isIncome ? '+' : '-'}${tx.amount.toStringAsFixed(0)}đ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                            ),
+                          ),
+                          // Chức năng nhấn để sửa
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AddEditTransactionPage(
+                                  transaction: tx as TransactionEntity,
+                                ),
+                              ),
+                            );
+                            // Nếu sửa thành công (result == true), tải lại dữ liệu
+                            if (result == true && context.mounted) {
+                              context
+                                  .read<DashboardCubit>()
+                                  .loadDashboardData();
+                            }
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ],
         );
       },
     );

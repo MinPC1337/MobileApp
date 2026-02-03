@@ -4,6 +4,8 @@ import '../../models/category_model.dart';
 abstract class CategoryRemoteDataSource {
   Future<void> addCategory(CategoryModel category);
   Future<List<CategoryModel>> getCategories(String userId);
+  Future<void> updateCategory(CategoryModel category);
+  Future<void> deleteCategory(String userId, String categoryId);
 }
 
 class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
@@ -27,5 +29,26 @@ class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
   Future<List<CategoryModel>> getCategories(String userId) async {
     // Hàm này có thể dùng để sync về sau
     return [];
+  }
+
+  @override
+  Future<void> updateCategory(CategoryModel category) async {
+    if (category.userId == null) return;
+    await firestore
+        .collection('users')
+        .doc(category.userId)
+        .collection('categories')
+        .doc(category.id.toString())
+        .update(category.toMap());
+  }
+
+  @override
+  Future<void> deleteCategory(String userId, String categoryId) async {
+    await firestore
+        .collection('users')
+        .doc(userId)
+        .collection('categories')
+        .doc(categoryId)
+        .delete();
   }
 }

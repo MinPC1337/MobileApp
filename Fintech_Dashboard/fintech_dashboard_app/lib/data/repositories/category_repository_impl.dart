@@ -55,4 +55,40 @@ class CategoryRepositoryImpl implements CategoryRepository {
       // Bỏ qua lỗi mạng, chỉ cần lưu local thành công
     }
   }
+
+  @override
+  Future<void> updateCategory(CategoryEntity category) async {
+    final db = await dbHelper.database;
+    final categoryModel = CategoryModel.fromEntity(category);
+
+    await db.update(
+      'categories',
+      categoryModel.toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+    );
+
+    try {
+      await remoteDataSource.updateCategory(categoryModel);
+    } catch (e) {
+      // Bỏ qua lỗi offline
+    }
+  }
+
+  @override
+  Future<void> deleteCategory(CategoryEntity category) async {
+    final db = await dbHelper.database;
+    await db.delete('categories', where: 'id = ?', whereArgs: [category.id]);
+
+    try {
+      if (category.userId != null) {
+        await remoteDataSource.deleteCategory(
+          category.userId!,
+          category.id.toString(),
+        );
+      }
+    } catch (e) {
+      // Bỏ qua lỗi offline
+    }
+  }
 }

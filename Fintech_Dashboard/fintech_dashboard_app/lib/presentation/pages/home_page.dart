@@ -42,34 +42,36 @@ class HomePage extends StatelessWidget {
             // Danh sách giao dịch
             Expanded(
               child: state.transactions.isEmpty
-                  ? const Center(child: Text("Chưa có giao dịch nào"))
+                  ? const Center(child: Text("Chưa có giao dịch nào."))
                   : ListView.builder(
-                      itemCount: state.transactions.length,
+                      // Chỉ hiển thị tối đa 10 giao dịch gần nhất
+                      itemCount: state.transactions.length > 5
+                          ? 5
+                          : state.transactions.length,
                       itemBuilder: (context, index) {
                         final tx = state.transactions[index];
+                        final isIncome = tx.categoryType == 'income';
+                        final color = isIncome ? Colors.green : Colors.red;
+                        final icon = isIncome
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward;
+
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: tx.categoryId == 1
-                                ? Colors.green.shade100
-                                : Colors.red.shade100,
-                            child: Icon(
-                              tx.categoryId == 1
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              color: tx.categoryId == 1
-                                  ? Colors.green
-                                  : Colors.red,
-                            ),
+                            backgroundColor: color.shade100,
+                            child: Icon(icon, color: color),
                           ),
-                          title: Text(tx.note),
+                          title: Text(
+                            tx.note.isNotEmpty
+                                ? tx.note
+                                : (tx.categoryName ?? 'Giao dịch'),
+                          ),
                           subtitle: Text(tx.date.toString().split(' ')[0]),
                           trailing: Text(
-                            "${tx.categoryId == 1 ? '+' : '-'}${tx.amount}đ",
+                            "${isIncome ? '+' : '-'}${tx.amount.toStringAsFixed(0)}đ",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: tx.categoryId == 1
-                                  ? Colors.green
-                                  : Colors.red,
+                              color: color,
                             ),
                           ),
                         );

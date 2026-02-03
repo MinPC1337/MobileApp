@@ -5,13 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'firebase_options.dart';
 import 'injection_container.dart' as di;
 import 'presentation/bloc/auth_cubit.dart';
-// import 'presentation/bloc/transaction_form_cubit.dart';
 import 'presentation/bloc/dashboard_cubit.dart';
 import 'presentation/bloc/auth_state.dart';
 import 'presentation/pages/dashboard_page.dart';
-import 'domain/usecases/get_transactions_usecase.dart';
-import 'domain/usecases/delete_transaction_usecase.dart';
-// import 'presentation/pages/add_edit_transaction_page.dart';
+import 'domain/usecases/transactions/get_transactions_usecase.dart';
+import 'domain/usecases/transactions/delete_transaction_usecase.dart';
 import 'presentation/pages/login_page.dart';
 import 'presentation/pages/register_page.dart';
 import 'presentation/pages/forgot_password_page.dart';
@@ -24,7 +22,7 @@ void main() async {
   // 2. Khởi tạo Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true, // Firestore sẽ tự cache thêm 1 lớp nữa
+    persistenceEnabled: true,
   );
   // 3. Khởi tạo Dependency Injection (GetIt)
   await di.init();
@@ -48,8 +46,6 @@ class MyApp extends StatelessWidget {
         home: const AuthGate(),
         routes: {
           '/register': (context) => const RegisterPage(),
-          // Route dashboard giờ được AuthGate xử lý,
-          // nhưng vẫn giữ lại để phòng trường hợp điều hướng tường minh.
           '/dashboard': (context) => const DashboardPage(),
           '/forgot_password': (context) => const ForgotPasswordPage(),
           '/verify_email': (context) => const EmailVerificationPage(),

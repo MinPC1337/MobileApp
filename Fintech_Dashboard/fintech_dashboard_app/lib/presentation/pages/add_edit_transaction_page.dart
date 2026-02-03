@@ -8,7 +8,6 @@ import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart' as cat_state;
-import '../bloc/dashboard_cubit.dart';
 import '../bloc/transaction_form_cubit.dart';
 import '../bloc/transaction_form_state.dart';
 
@@ -41,8 +40,7 @@ class AddEditTransactionPage extends StatelessWidget {
       child: BlocListener<TransactionFormCubit, TransactionFormState>(
         listener: (context, state) {
           if (state is TransactionFormSuccess) {
-            context.read<DashboardCubit>().loadDashboardData();
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(true); // Trả về true khi thành công
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(

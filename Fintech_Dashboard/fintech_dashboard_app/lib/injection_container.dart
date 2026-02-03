@@ -23,6 +23,8 @@ import 'domain/usecases/transactions/delete_transaction_usecase.dart';
 import 'domain/usecases/auth/sign_out_usecase.dart';
 import 'domain/usecases/categories/get_categories_usecase.dart';
 import 'domain/usecases/categories/add_category_usecase.dart';
+import 'domain/usecases/categories/update_category_usecase.dart';
+import 'domain/usecases/categories/delete_category_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
 import 'domain/usecases/transactions/get_transactions_usecase.dart';
 import 'presentation/bloc/category_cubit.dart';
@@ -62,6 +64,8 @@ Future<void> init() async {
     (userId, _) => CategoryCubit(
       getCategoriesUseCase: sl(),
       addCategoryUseCase: sl(),
+      updateCategoryUseCase: sl(),
+      deleteCategoryUseCase: sl(),
       userId: userId,
     ),
   );
@@ -80,6 +84,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
   sl.registerLazySingleton(() => GetCategoriesUseCase(sl()));
   sl.registerLazySingleton(() => AddCategoryUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateCategoryUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteCategoryUseCase(sl()));
 
   // -- Auth Feature Data Sources --
   sl.registerLazySingleton<AuthRemoteDataSource>(

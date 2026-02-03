@@ -5,6 +5,7 @@ import 'home_page.dart';
 import 'budget_page.dart';
 import 'settings_page.dart';
 import 'transaction_page.dart';
+import 'category_management_page.dart';
 import 'add_edit_transaction_page.dart';
 import '../bloc/transaction_form_cubit.dart';
 import '../../injection_container.dart' as di;
@@ -38,15 +39,27 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
-        actions: _selectedIndex == 0
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () =>
-                      context.read<DashboardCubit>().loadDashboardData(),
-                ),
-              ]
-            : [],
+        actions: [
+          if (_selectedIndex == 0)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Tải lại',
+              onPressed: () =>
+                  context.read<DashboardCubit>().loadDashboardData(),
+            ),
+          if (_selectedIndex == 1)
+            IconButton(
+              icon: const Icon(Icons.category_outlined),
+              tooltip: 'Quản lý Danh mục',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CategoryManagementPage(),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
