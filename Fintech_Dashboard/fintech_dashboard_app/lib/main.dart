@@ -14,6 +14,7 @@ import 'presentation/pages/login_page.dart';
 import 'presentation/pages/register_page.dart';
 import 'presentation/pages/forgot_password_page.dart';
 import 'presentation/pages/email_verification_page.dart';
+import 'presentation/bloc/budget/budget_cubit.dart';
 
 void main() async {
   // 1. Đảm bảo các plugin hệ thống đã sẵn sàng
@@ -64,12 +65,20 @@ class AuthGate extends StatelessWidget {
       builder: (context, state) {
         if (state is AuthSuccess) {
           // Nếu đã xác thực, cung cấp DashboardCubit và hiển thị DashboardPage
-          return BlocProvider(
-            create: (_) => DashboardCubit(
-              getTransactionsUseCase: di.sl<GetTransactionsUseCase>(),
-              deleteTransactionUseCase: di.sl<DeleteTransactionUseCase>(),
-              userId: state.user.id,
-            )..loadDashboardData(),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (_) => DashboardCubit(
+                  getTransactionsUseCase: di.sl<GetTransactionsUseCase>(),
+                  deleteTransactionUseCase: di.sl<DeleteTransactionUseCase>(),
+                  userId: state.user.id,
+                )..loadDashboardData(),
+              ),
+              BlocProvider(
+                create: (_) =>
+                    di.sl<BudgetCubit>(param1: state.user.id)..loadBudgetData(),
+              ),
+            ],
             child: const DashboardPage(),
           );
         } else if (state is AuthInitial) {

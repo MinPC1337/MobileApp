@@ -34,6 +34,7 @@ import 'domain/usecases/budgets/update_budget_usecase.dart';
 import 'domain/usecases/budgets/delete_budget_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
 import 'domain/usecases/transactions/get_transactions_usecase.dart';
+import 'presentation/bloc/budget/budget_cubit.dart';
 import 'presentation/bloc/category_cubit.dart';
 import 'presentation/bloc/transaction_form_cubit.dart';
 
@@ -73,6 +74,18 @@ Future<void> init() async {
       addCategoryUseCase: sl(),
       updateCategoryUseCase: sl(),
       deleteCategoryUseCase: sl(),
+      userId: userId,
+    ),
+  );
+
+  // Cubit for Budget Management
+  sl.registerFactoryParam<BudgetCubit, String, void>(
+    (userId, _) => BudgetCubit(
+      getBudgetsUseCase: sl(),
+      addBudgetUseCase: sl(),
+      deleteBudgetUseCase: sl(),
+      getTransactionsUseCase: sl(),
+      getCategoriesUseCase: sl(),
       userId: userId,
     ),
   );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/transaction_entity.dart';
+import '../bloc/budget/budget_cubit.dart';
 import '../bloc/dashboard_cubit.dart';
 import '../bloc/dashboard_state.dart';
 import 'add_edit_transaction_page.dart';
@@ -153,6 +154,8 @@ class TransactionPage extends StatelessWidget {
                               context
                                   .read<DashboardCubit>()
                                   .loadDashboardData();
+                              // Cập nhật lại ngân sách vì giao dịch thay đổi ảnh hưởng đến số tiền đã chi
+                              context.read<BudgetCubit>().loadBudgetData();
                             }
                           },
                         ),

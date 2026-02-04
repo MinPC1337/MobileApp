@@ -27,8 +27,6 @@ class BudgetRepositoryImpl implements BudgetRepository {
       amount: budget.amount,
       categoryId: budget.categoryId,
       userId: budget.userId,
-      startDate: budget.startDate,
-      endDate: budget.endDate,
       createdAt: budget.createdAt,
     );
 

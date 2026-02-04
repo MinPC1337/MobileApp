@@ -9,7 +9,9 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('finance_app.db');
+    _database = await _initDB(
+      'finance_app.db',
+    ); // Đổi tên để tạo DB mới, tránh lỗi cấu trúc cũ
     return _database!;
   }
 
@@ -69,12 +71,10 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE budgets (
         id $idType,
-        amount_limit $numType,
-        start_date $textType,
-        end_date $textType,
+        amount $numType,
         category_id INTEGER,
         user_id $textType,
-        updated_at $textType,
+        created_at $textType,
         FOREIGN KEY (category_id) REFERENCES categories (id),
         FOREIGN KEY (user_id) REFERENCES users (id)
       )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/dashboard_cubit.dart';
+import '../bloc/budget/budget_cubit.dart';
 import 'home_page.dart';
 import 'budget_page.dart';
 import 'settings_page.dart';
@@ -52,11 +53,18 @@ class _DashboardPageState extends State<DashboardPage> {
               icon: const Icon(Icons.category_outlined),
               tooltip: 'Quản lý Danh mục',
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CategoryManagementPage(),
-                  ),
-                );
+                Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => const CategoryManagementPage(),
+                      ),
+                    )
+                    .then((_) {
+                      // Tải lại dữ liệu ngân sách để cập nhật danh sách danh mục mới nhất
+                      if (context.mounted) {
+                        context.read<BudgetCubit>().loadBudgetData();
+                      }
+                    });
               },
             ),
         ],
@@ -96,6 +104,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 if (result == true) {
                   if (!context.mounted) return;
                   context.read<DashboardCubit>().loadDashboardData();
+                  // Tải lại ngân sách để cập nhật tiến độ chi tiêu và danh mục mới (nếu có)
+                  context.read<BudgetCubit>().loadBudgetData();
                 }
               },
               child: const Icon(Icons.add),
