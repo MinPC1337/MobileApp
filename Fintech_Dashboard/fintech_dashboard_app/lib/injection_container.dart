@@ -5,12 +5,15 @@ import 'data/data_sources/local/database_helper.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/transaction_repository_impl.dart';
 import 'data/repositories/category_repository_impl.dart';
+import 'data/repositories/budget_repository_impl.dart';
 import 'data/data_sources/remote/transaction_remote_data_source.dart';
 import 'data/data_sources/remote/category_remote_data_source.dart';
+import 'data/data_sources/remote/budget_remote_data_source.dart';
 import 'data/data_sources/remote/auth_remote_data_source.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/transaction_repository.dart';
 import 'domain/repositories/category_repository.dart';
+import 'domain/repositories/budget_repository.dart';
 import 'domain/usecases/auth/register_user_usecase.dart';
 import 'domain/usecases/auth/sign_in_usecase.dart';
 import 'domain/usecases/auth/get_current_user_usecase.dart';
@@ -25,6 +28,10 @@ import 'domain/usecases/categories/get_categories_usecase.dart';
 import 'domain/usecases/categories/add_category_usecase.dart';
 import 'domain/usecases/categories/update_category_usecase.dart';
 import 'domain/usecases/categories/delete_category_usecase.dart';
+import 'domain/usecases/budgets/get_budgets_usecase.dart';
+import 'domain/usecases/budgets/add_budget_usecase.dart';
+import 'domain/usecases/budgets/update_budget_usecase.dart';
+import 'domain/usecases/budgets/delete_budget_usecase.dart';
 import 'presentation/bloc/auth_cubit.dart';
 import 'domain/usecases/transactions/get_transactions_usecase.dart';
 import 'presentation/bloc/category_cubit.dart';
@@ -86,6 +93,10 @@ Future<void> init() async {
   sl.registerLazySingleton(() => AddCategoryUseCase(sl()));
   sl.registerLazySingleton(() => UpdateCategoryUseCase(sl()));
   sl.registerLazySingleton(() => DeleteCategoryUseCase(sl()));
+  sl.registerLazySingleton(() => GetBudgetsUseCase(sl()));
+  sl.registerLazySingleton(() => AddBudgetUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateBudgetUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteBudgetUseCase(sl()));
 
   // -- Auth Feature Data Sources --
   sl.registerLazySingleton<AuthRemoteDataSource>(
@@ -105,6 +116,9 @@ Future<void> init() async {
   sl.registerLazySingleton<CategoryRemoteDataSource>(
     () => CategoryRemoteDataSourceImpl(sl()),
   );
+  sl.registerLazySingleton<BudgetRemoteDataSource>(
+    () => BudgetRemoteDataSourceImpl(sl()),
+  );
 
   // Khi ứng dụng yêu cầu TransactionRepository, GetIt sẽ trả về TransactionRepositoryImpl
   sl.registerLazySingleton<TransactionRepository>(
@@ -113,6 +127,10 @@ Future<void> init() async {
 
   sl.registerLazySingleton<CategoryRepository>(
     () => CategoryRepositoryImpl(dbHelper: sl(), remoteDataSource: sl()),
+  );
+
+  sl.registerLazySingleton<BudgetRepository>(
+    () => BudgetRepositoryImpl(dbHelper: sl(), remoteDataSource: sl()),
   );
 
   // =================================================================

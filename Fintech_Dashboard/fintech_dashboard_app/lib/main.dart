@@ -73,13 +73,10 @@ class AuthGate extends StatelessWidget {
             child: const DashboardPage(),
           );
         } else if (state is AuthInitial) {
-          // Chỉ hiển thị màn hình chờ khi ứng dụng mới khởi động (chưa kiểm tra xong session)
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         } else {
-          // Với AuthUnauthenticated, AuthFailure và AuthLoading (khi bấm nút đăng nhập)
-          // Ta giữ nguyên LoginPage để nó tự xử lý UI loading/error mà không bị unmount
           return const LoginPage();
         }
       },
