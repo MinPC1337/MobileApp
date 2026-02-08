@@ -45,6 +45,12 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
 
   @override
   Future<List<BudgetModel>> getBudgets(String userId) async {
-    return [];
+    final snapshot = await firestore
+        .collection('users')
+        .doc(userId)
+        .collection('budgets')
+        .get();
+
+    return snapshot.docs.map((doc) => BudgetModel.fromMap(doc.data())).toList();
   }
 }

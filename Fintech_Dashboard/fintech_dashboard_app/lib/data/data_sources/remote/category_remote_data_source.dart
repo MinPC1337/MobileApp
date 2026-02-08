@@ -27,8 +27,15 @@ class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
 
   @override
   Future<List<CategoryModel>> getCategories(String userId) async {
-    // Hàm này có thể dùng để sync về sau
-    return [];
+    final snapshot = await firestore
+        .collection('users')
+        .doc(userId)
+        .collection('categories')
+        .get();
+
+    return snapshot.docs
+        .map((doc) => CategoryModel.fromMap(doc.data()))
+        .toList();
   }
 
   @override
