@@ -4,6 +4,7 @@ import '../../domain/entities/transaction_entity.dart';
 import '../bloc/budget/budget_cubit.dart';
 import '../bloc/dashboard_cubit.dart';
 import '../bloc/dashboard_state.dart';
+import '../bloc/setting/settings_cubit.dart';
 import 'add_edit_transaction_page.dart';
 
 class TransactionPage extends StatelessWidget {
@@ -11,6 +12,10 @@ class TransactionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lắng nghe thay đổi ngôn ngữ từ SettingsCubit
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
+
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
         if (state.isLoading) {
@@ -22,13 +27,18 @@ class TransactionPage extends StatelessWidget {
         }
 
         if (state.transactions.isEmpty) {
-          return const Center(child: Text("Chưa có giao dịch nào."));
+          return Center(
+            child: Text(
+              isVi ? "Chưa có giao dịch nào." : "No transactions yet.",
+            ),
+          );
         }
 
         // Logic nhóm giao dịch theo danh mục (chuyển từ HomePage sang)
         final groupedTransactions = <String, List<dynamic>>{};
         for (final tx in state.transactions) {
-          final categoryName = tx.categoryName ?? 'Chưa phân loại';
+          final categoryName =
+              tx.categoryName ?? (isVi ? 'Chưa phân loại' : 'Uncategorized');
           if (groupedTransactions[categoryName] == null) {
             groupedTransactions[categoryName] = [];
           }
@@ -67,7 +77,9 @@ class TransactionPage extends StatelessWidget {
                       categoryName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text("Tổng: ${displayTotal.toStringAsFixed(0)}đ"),
+                    subtitle: Text(
+                      "${isVi ? 'Tổng' : 'Total'}: ${displayTotal.toStringAsFixed(0)}đ",
+                    ),
                     initiallyExpanded: true,
                     children: transactionsForCategory.map<Widget>((tx) {
                       final isIncome = tx.categoryType == 'income';
@@ -93,13 +105,17 @@ class TransactionPage extends StatelessWidget {
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: const Text('Xác nhận Xóa'),
-                                content: const Text(
-                                  'Bạn có chắc chắn muốn xóa giao dịch này không?',
+                                title: Text(
+                                  isVi ? 'Xác nhận Xóa' : 'Confirm Delete',
+                                ),
+                                content: Text(
+                                  isVi
+                                      ? 'Bạn có chắc chắn muốn xóa giao dịch này không?'
+                                      : 'Are you sure you want to delete this transaction?',
                                 ),
                                 actions: <Widget>[
                                   TextButton(
-                                    child: const Text('Hủy'),
+                                    child: Text(isVi ? 'Hủy' : 'Cancel'),
                                     onPressed: () =>
                                         Navigator.of(context).pop(false),
                                   ),
@@ -107,7 +123,7 @@ class TransactionPage extends StatelessWidget {
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.red,
                                     ),
-                                    child: const Text('Xóa'),
+                                    child: Text(isVi ? 'Xóa' : 'Delete'),
                                     onPressed: () =>
                                         Navigator.of(context).pop(true),
                                   ),
@@ -123,7 +139,13 @@ class TransactionPage extends StatelessWidget {
                             tx as TransactionEntity,
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Đã xóa giao dịch')),
+                            SnackBar(
+                              content: Text(
+                                isVi
+                                    ? 'Đã xóa giao dịch'
+                                    : 'Transaction deleted',
+                              ),
+                            ),
                           );
                         },
                         child: ListTile(

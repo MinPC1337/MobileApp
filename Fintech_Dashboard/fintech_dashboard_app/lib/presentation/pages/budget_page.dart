@@ -4,6 +4,7 @@ import '../../domain/entities/budget_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../bloc/budget/budget_cubit.dart';
 import '../bloc/budget/budget_state.dart';
+import '../bloc/setting/settings_cubit.dart';
 import 'category_management_page.dart';
 
 class BudgetPage extends StatelessWidget {
@@ -11,6 +12,8 @@ class BudgetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     return Scaffold(
       body: BlocBuilder<BudgetCubit, BudgetState>(
         builder: (context, state) {
@@ -21,8 +24,12 @@ class BudgetPage extends StatelessWidget {
             return Center(child: Text(state.errorMessage!));
           }
           if (state.budgets.isEmpty) {
-            return const Center(
-              child: Text("Chưa có ngân sách nào được thiết lập."),
+            return Center(
+              child: Text(
+                isVi
+                    ? "Chưa có ngân sách nào được thiết lập."
+                    : "No budgets set yet.",
+              ),
             );
           }
 
@@ -39,7 +46,7 @@ class BudgetPage extends StatelessWidget {
                     (c) => c.id == budget.categoryId,
                     orElse: () => CategoryEntity(
                       id: -1,
-                      name: 'Không xác định',
+                      name: isVi ? 'Không xác định' : 'Unknown',
                       type: 'expense',
                       icon: '',
                       updatedAt: DateTime.now(),
@@ -106,17 +113,19 @@ class BudgetPage extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "Giới hạn: ${budget.amount.toStringAsFixed(0)} đ",
+                            "${isVi ? 'Giới hạn' : 'Limit'}: ${budget.amount.toStringAsFixed(0)} đ",
                             style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
                       if (isOverBudget)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            "Bạn đã vượt quá ngân sách!",
-                            style: TextStyle(
+                            isVi
+                                ? "Bạn đã vượt quá ngân sách!"
+                                : "You have exceeded the budget!",
+                            style: const TextStyle(
                               color: Colors.red,
                               fontStyle: FontStyle.italic,
                             ),
@@ -145,22 +154,31 @@ class BudgetPage extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, BudgetEntity budget) {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Xóa ngân sách"),
-        content: const Text("Bạn có chắc chắn muốn xóa ngân sách này?"),
+        title: Text(isVi ? "Xóa ngân sách" : "Delete Budget"),
+        content: Text(
+          isVi
+              ? "Bạn có chắc chắn muốn xóa ngân sách này?"
+              : "Are you sure you want to delete this budget?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Hủy"),
+            child: Text(isVi ? "Hủy" : "Cancel"),
           ),
           TextButton(
             onPressed: () {
               context.read<BudgetCubit>().deleteBudget(budget);
               Navigator.pop(ctx);
             },
-            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+            child: Text(
+              isVi ? "Xóa" : "Delete",
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -171,6 +189,8 @@ class BudgetPage extends StatelessWidget {
     BuildContext context,
     List<CategoryEntity> categories,
   ) {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     final cubit = context.read<BudgetCubit>();
     final amountController = TextEditingController();
     int? selectedCategoryId;
@@ -183,14 +203,18 @@ class BudgetPage extends StatelessWidget {
     if (expenseCategories.isEmpty) {
       final hasAnyCategories = categories.isNotEmpty;
       final message = hasAnyCategories
-          ? 'Bạn có ${categories.length} danh mục, nhưng không có danh mục nào là "Chi phí".'
-          : 'Chưa có danh mục chi tiêu nào để tạo ngân sách.';
+          ? (isVi
+                ? 'Bạn có ${categories.length} danh mục, nhưng không có danh mục nào là "Chi phí".'
+                : 'You have ${categories.length} categories, but none are "Expense".')
+          : (isVi
+                ? 'Chưa có danh mục chi tiêu nào để tạo ngân sách.'
+                : 'No expense categories available to create budget.');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
           action: SnackBarAction(
-            label: 'Tạo ngay',
+            label: isVi ? 'Tạo ngay' : 'Create Now',
             onPressed: () {
               Navigator.of(context)
                   .push(
@@ -214,12 +238,14 @@ class BudgetPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text("Thiết lập ngân sách"),
+          title: Text(isVi ? "Thiết lập ngân sách" : "Set Budget"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: "Danh mục"),
+                decoration: InputDecoration(
+                  labelText: isVi ? "Danh mục" : "Category",
+                ),
                 items: expenseCategories.map((c) {
                   return DropdownMenuItem(value: c.id, child: Text(c.name));
                 }).toList(),
@@ -227,8 +253,8 @@ class BudgetPage extends StatelessWidget {
               ),
               TextField(
                 controller: amountController,
-                decoration: const InputDecoration(
-                  labelText: "Số tiền giới hạn",
+                decoration: InputDecoration(
+                  labelText: isVi ? "Số tiền giới hạn" : "Limit Amount",
                 ),
                 keyboardType: TextInputType.number,
                 // Bạn có thể thêm inputFormatters ở đây nếu muốn chặn ký tự chữ
@@ -238,7 +264,7 @@ class BudgetPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text("Hủy"),
+              child: Text(isVi ? "Hủy" : "Cancel"),
             ),
             ElevatedButton(
               onPressed: () {
@@ -257,7 +283,7 @@ class BudgetPage extends StatelessWidget {
                   }
                 }
               },
-              child: const Text("Lưu"),
+              child: Text(isVi ? "Lưu" : "Save"),
             ),
           ],
         );

@@ -220,4 +220,10 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     return maps.map((map) => TransactionModel.fromMap(map)).toList();
   }
+
+  @override
+  Future<void> clearLocalData() async {
+    final db = await dbHelper.database;
+    await db.delete('transactions');
+  }
 }

@@ -10,6 +10,7 @@ import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart' as cat_state;
 import '../bloc/transaction_form_cubit.dart';
 import '../bloc/transaction_form_state.dart';
+import '../bloc/setting/settings_cubit.dart';
 
 class AddEditTransactionPage extends StatelessWidget {
   final TransactionEntity? transaction;
@@ -19,6 +20,9 @@ class AddEditTransactionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthCubit>().state;
+    // Lắng nghe ngôn ngữ hiện tại
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     String? userId;
     if (authState is AuthSuccess) {
       userId = authState.user.id;
@@ -45,8 +49,12 @@ class AddEditTransactionPage extends StatelessWidget {
               SnackBar(
                 content: Text(
                   transaction == null
-                      ? 'Thêm giao dịch thành công!'
-                      : 'Cập nhật giao dịch thành công!',
+                      ? (isVi
+                            ? 'Thêm giao dịch thành công!'
+                            : 'Transaction added successfully!')
+                      : (isVi
+                            ? 'Cập nhật giao dịch thành công!'
+                            : 'Transaction updated successfully!'),
                 ),
                 backgroundColor: Colors.green,
               ),
@@ -54,7 +62,9 @@ class AddEditTransactionPage extends StatelessWidget {
           } else if (state is TransactionFormFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Lỗi: ${state.message}'),
+                content: Text(
+                  isVi ? 'Lỗi: ${state.message}' : 'Error: ${state.message}',
+                ),
                 backgroundColor: Colors.red,
               ),
             );
@@ -106,11 +116,19 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
   }
 
   void _submitForm() {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     if (_formKey.currentState!.validate()) {
       final amount = double.tryParse(_amountController.text);
       if (amount == null || _selectedCategoryId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin.')),
+          SnackBar(
+            content: Text(
+              isVi
+                  ? 'Vui lòng điền đầy đủ thông tin.'
+                  : 'Please fill in all fields.',
+            ),
+          ),
         );
         return;
       }
@@ -136,10 +154,14 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
 
   @override
   Widget build(BuildContext context) {
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.transaction == null ? 'Thêm Giao dịch' : 'Sửa Giao dịch',
+          widget.transaction == null
+              ? (isVi ? 'Thêm Giao dịch' : 'Add Transaction')
+              : (isVi ? 'Sửa Giao dịch' : 'Edit Transaction'),
         ),
       ),
       body: BlocBuilder<TransactionFormCubit, TransactionFormState>(
@@ -156,11 +178,15 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                 children: [
                   TextFormField(
                     controller: _amountController,
-                    decoration: const InputDecoration(labelText: 'Số tiền'),
+                    decoration: InputDecoration(
+                      labelText: isVi ? 'Số tiền' : 'Amount',
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) => (v == null || v.isEmpty)
-                        ? 'Vui lòng nhập số tiền'
+                        ? (isVi
+                              ? 'Vui lòng nhập số tiền'
+                              : 'Please enter amount')
                         : null,
                   ),
                   const SizedBox(height: 16),
@@ -170,7 +196,11 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (catState.categories.isEmpty) {
-                        return const Text('Không có danh mục để chọn.');
+                        return Text(
+                          isVi
+                              ? 'Không có danh mục để chọn.'
+                              : 'No categories available.',
+                        );
                       }
                       if (_selectedCategoryId != null &&
                           !catState.categories.any(
@@ -186,8 +216,8 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                             child: DropdownButtonFormField<int>(
                               isExpanded: true, // Để text dài không bị lỗi
                               initialValue: _selectedCategoryId,
-                              decoration: const InputDecoration(
-                                labelText: 'Danh mục',
+                              decoration: InputDecoration(
+                                labelText: isVi ? 'Danh mục' : 'Category',
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
@@ -204,8 +234,11 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                               }).toList(),
                               onChanged: (v) =>
                                   setState(() => _selectedCategoryId = v),
-                              validator: (v) =>
-                                  v == null ? 'Vui lòng chọn danh mục' : null,
+                              validator: (v) => v == null
+                                  ? (isVi
+                                        ? 'Vui lòng chọn danh mục'
+                                        : 'Please select a category')
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -213,7 +246,9 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                             onPressed: () =>
                                 _showQuickAddCategoryDialog(context),
                             icon: const Icon(Icons.add),
-                            tooltip: "Thêm danh mục mới",
+                            tooltip: isVi
+                                ? "Thêm danh mục mới"
+                                : "Add new category",
                           ),
                         ],
                       );
@@ -222,13 +257,17 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _noteController,
-                    decoration: const InputDecoration(labelText: 'Ghi chú'),
+                    decoration: InputDecoration(
+                      labelText: isVi ? 'Ghi chú' : 'Note',
+                    ),
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: _submitForm,
                     child: Text(
-                      widget.transaction == null ? 'Thêm' : 'Cập nhật',
+                      widget.transaction == null
+                          ? (isVi ? 'Thêm' : 'Add')
+                          : (isVi ? 'Cập nhật' : 'Update'),
                     ),
                   ),
                 ],
@@ -242,6 +281,8 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
 
   // Hàm hiển thị Dialog thêm nhanh danh mục
   void _showQuickAddCategoryDialog(BuildContext context) {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     final nameController = TextEditingController();
     String type = 'expense'; // Mặc định là chi tiêu
     final categoryCubit = context.read<CategoryCubit>();
@@ -250,13 +291,15 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Thêm danh mục mới'),
+          title: Text(isVi ? 'Thêm danh mục mới' : 'Add New Category'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Tên danh mục'),
+                decoration: InputDecoration(
+                  labelText: isVi ? 'Tên danh mục' : 'Category Name',
+                ),
                 autofocus: true,
               ),
               const SizedBox(height: 16),
@@ -264,15 +307,17 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                 builder: (context, setState) {
                   return DropdownButtonFormField<String>(
                     initialValue: type,
-                    decoration: const InputDecoration(labelText: 'Loại'),
-                    items: const [
+                    decoration: InputDecoration(
+                      labelText: isVi ? 'Loại' : 'Type',
+                    ),
+                    items: [
                       DropdownMenuItem(
                         value: 'expense',
-                        child: Text('Chi phí (-)'),
+                        child: Text(isVi ? 'Chi phí (-)' : 'Expense (-)'),
                       ),
                       DropdownMenuItem(
                         value: 'income',
-                        child: Text('Thu nhập (+)'),
+                        child: Text(isVi ? 'Thu nhập (+)' : 'Income (+)'),
                       ),
                     ],
                     onChanged: (val) => setState(() => type = val!),
@@ -284,7 +329,7 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Hủy'),
+              child: Text(isVi ? 'Hủy' : 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -298,7 +343,7 @@ class _AddEditTransactionViewState extends State<_AddEditTransactionView> {
                   Navigator.pop(dialogContext);
                 }
               },
-              child: const Text('Lưu'),
+              child: Text(isVi ? 'Lưu' : 'Save'),
             ),
           ],
         );

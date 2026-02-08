@@ -6,6 +6,7 @@ import '../bloc/auth_cubit.dart';
 import '../bloc/auth_state.dart';
 import '../bloc/category_cubit.dart';
 import '../bloc/category_state.dart';
+import '../bloc/setting/settings_cubit.dart';
 
 class CategoryManagementPage extends StatelessWidget {
   const CategoryManagementPage({super.key});
@@ -13,21 +14,29 @@ class CategoryManagementPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     String? userId;
     if (authState is AuthSuccess) {
       userId = authState.user.id;
     }
 
     if (userId == null) {
-      return const Scaffold(
-        body: Center(child: Text("Lỗi: Không tìm thấy người dùng.")),
+      return Scaffold(
+        body: Center(
+          child: Text(
+            isVi ? "Lỗi: Không tìm thấy người dùng." : "Error: User not found.",
+          ),
+        ),
       );
     }
 
     return BlocProvider(
       create: (_) => di.sl<CategoryCubit>(param1: userId)..loadCategories(),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Quản lý Danh mục')),
+        appBar: AppBar(
+          title: Text(isVi ? 'Quản lý Danh mục' : 'Manage Categories'),
+        ),
         body: BlocBuilder<CategoryCubit, CategoryState>(
           builder: (context, state) {
             if (state.isLoading) {
@@ -37,7 +46,11 @@ class CategoryManagementPage extends StatelessWidget {
               return Center(child: Text(state.errorMessage!));
             }
             if (state.categories.isEmpty) {
-              return const Center(child: Text('Chưa có danh mục nào.'));
+              return Center(
+                child: Text(
+                  isVi ? 'Chưa có danh mục nào.' : 'No categories found.',
+                ),
+              );
             }
             return ListView.builder(
               itemCount: state.categories.length,
@@ -61,20 +74,22 @@ class CategoryManagementPage extends StatelessWidget {
                     return await showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Xác nhận xóa'),
-                        content: const Text(
-                          'Bạn có chắc muốn xóa danh mục này?',
+                        title: Text(isVi ? 'Xác nhận xóa' : 'Confirm Delete'),
+                        content: Text(
+                          isVi
+                              ? 'Bạn có chắc muốn xóa danh mục này?'
+                              : 'Are you sure you want to delete this category?',
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(false),
-                            child: const Text('Hủy'),
+                            child: Text(isVi ? 'Hủy' : 'Cancel'),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(true),
-                            child: const Text(
-                              'Xóa',
-                              style: TextStyle(color: Colors.red),
+                            child: Text(
+                              isVi ? 'Xóa' : 'Delete',
+                              style: const TextStyle(color: Colors.red),
                             ),
                           ),
                         ],
@@ -84,7 +99,11 @@ class CategoryManagementPage extends StatelessWidget {
                   onDismissed: (direction) {
                     context.read<CategoryCubit>().deleteCategory(category);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã xóa danh mục')),
+                      SnackBar(
+                        content: Text(
+                          isVi ? 'Đã xóa danh mục' : 'Category deleted',
+                        ),
+                      ),
                     );
                   },
                   child: ListTile(
@@ -95,7 +114,11 @@ class CategoryManagementPage extends StatelessWidget {
                       color: isIncome ? Colors.green : Colors.red,
                     ),
                     title: Text(category.name),
-                    subtitle: Text(isDefault ? 'Mặc định' : 'Cá nhân'),
+                    subtitle: Text(
+                      isDefault
+                          ? (isVi ? 'Mặc định' : 'Default')
+                          : (isVi ? 'Cá nhân' : 'Personal'),
+                    ),
                     trailing: isDefault
                         ? null
                         : const Icon(Icons.edit, size: 20),
@@ -133,6 +156,8 @@ class CategoryManagementPage extends StatelessWidget {
     CategoryCubit cubit, {
     CategoryEntity? category,
   }) {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: category?.name ?? '');
     String type = category?.type ?? 'expense'; // Loại mặc định
@@ -141,7 +166,11 @@ class CategoryManagementPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(category == null ? 'Thêm Danh mục mới' : 'Sửa Danh mục'),
+          title: Text(
+            category == null
+                ? (isVi ? 'Thêm Danh mục mới' : 'Add New Category')
+                : (isVi ? 'Sửa Danh mục' : 'Edit Category'),
+          ),
           content: Form(
             key: formKey,
             child: Column(
@@ -149,24 +178,28 @@ class CategoryManagementPage extends StatelessWidget {
               children: [
                 TextFormField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Tên danh mục'),
+                  decoration: InputDecoration(
+                    labelText: isVi ? 'Tên danh mục' : 'Category Name',
+                  ),
                   validator: (value) => (value == null || value.isEmpty)
-                      ? 'Vui lòng nhập tên'
+                      ? (isVi ? 'Vui lòng nhập tên' : 'Please enter name')
                       : null,
                 ),
                 StatefulBuilder(
                   builder: (BuildContext context, StateSetter setState) {
                     return DropdownButtonFormField<String>(
                       initialValue: type,
-                      decoration: const InputDecoration(labelText: 'Loại'),
-                      items: const [
+                      decoration: InputDecoration(
+                        labelText: isVi ? 'Loại' : 'Type',
+                      ),
+                      items: [
                         DropdownMenuItem(
                           value: 'expense',
-                          child: Text('Chi phí'),
+                          child: Text(isVi ? 'Chi phí' : 'Expense'),
                         ),
                         DropdownMenuItem(
                           value: 'income',
-                          child: Text('Thu nhập'),
+                          child: Text(isVi ? 'Thu nhập' : 'Income'),
                         ),
                       ],
                       onChanged: (value) => setState(() => type = value!),
@@ -179,7 +212,7 @@ class CategoryManagementPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Hủy'),
+              child: Text(isVi ? 'Hủy' : 'Cancel'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -205,7 +238,11 @@ class CategoryManagementPage extends StatelessWidget {
                   Navigator.of(dialogContext).pop();
                 }
               },
-              child: Text(category == null ? 'Thêm' : 'Lưu'),
+              child: Text(
+                category == null
+                    ? (isVi ? 'Thêm' : 'Add')
+                    : (isVi ? 'Lưu' : 'Save'),
+              ),
             ),
           ],
         );

@@ -7,6 +7,8 @@ import 'injection_container.dart' as di;
 import 'presentation/bloc/auth_cubit.dart';
 import 'presentation/bloc/dashboard_cubit.dart';
 import 'presentation/bloc/auth_state.dart';
+import 'presentation/bloc/setting/settings_cubit.dart';
+import 'presentation/bloc/setting/settings_state.dart';
 import 'presentation/pages/dashboard_page.dart';
 import 'domain/usecases/transactions/get_transactions_usecase.dart';
 import 'domain/usecases/transactions/delete_transaction_usecase.dart';
@@ -36,20 +38,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      // Kích hoạt việc kiểm tra trạng thái đăng nhập ngay khi Cubit được tạo
-      create: (_) => di.sl<AuthCubit>()..checkAuthStatus(),
-      child: MaterialApp(
-        title: 'Fintech Dashboard',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-        // AuthGate sẽ quyết định trang nào được hiển thị dựa trên AuthState
-        home: const AuthGate(),
-        routes: {
-          '/register': (context) => const RegisterPage(),
-          '/dashboard': (context) => const DashboardPage(),
-          '/forgot_password': (context) => const ForgotPasswordPage(),
-          '/verify_email': (context) => const EmailVerificationPage(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => di.sl<AuthCubit>()..checkAuthStatus()),
+        BlocProvider(create: (_) => di.sl<SettingsCubit>()),
+      ],
+      child: BlocBuilder<SettingsCubit, SettingsState>(
+        builder: (context, settingsState) {
+          return MaterialApp(
+            title: 'Fintech Dashboard',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+            darkTheme: ThemeData.dark(useMaterial3: true),
+            themeMode: settingsState.themeMode,
+            locale: settingsState.locale,
+            home: const AuthGate(),
+            routes: {
+              '/register': (context) => const RegisterPage(),
+              '/dashboard': (context) => const DashboardPage(),
+              '/forgot_password': (context) => const ForgotPasswordPage(),
+              '/verify_email': (context) => const EmailVerificationPage(),
+            },
+          );
         },
       ),
     );

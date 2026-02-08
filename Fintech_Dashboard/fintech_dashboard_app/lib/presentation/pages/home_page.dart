@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/dashboard_cubit.dart';
 import '../bloc/dashboard_state.dart';
+import '../bloc/setting/settings_cubit.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     return BlocBuilder<DashboardCubit, DashboardState>(
       builder: (context, state) {
         if (state.isLoading) {
@@ -26,15 +29,18 @@ class HomePage extends StatelessWidget {
         return Column(
           children: [
             // Phần hiển thị Số dư (Balance Card)
-            _buildBalanceCard(state.totalBalance),
+            _buildBalanceCard(state.totalBalance, isVi),
 
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Giao dịch gần đây",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  isVi ? "Giao dịch gần đây" : "Recent Transactions",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -42,7 +48,13 @@ class HomePage extends StatelessWidget {
             // Danh sách giao dịch
             Expanded(
               child: state.transactions.isEmpty
-                  ? const Center(child: Text("Chưa có giao dịch nào."))
+                  ? Center(
+                      child: Text(
+                        isVi
+                            ? "Chưa có giao dịch nào."
+                            : "No transactions yet.",
+                      ),
+                    )
                   : ListView.builder(
                       // Chỉ hiển thị tối đa 10 giao dịch gần nhất
                       itemCount: state.transactions.length > 5
@@ -64,7 +76,8 @@ class HomePage extends StatelessWidget {
                           title: Text(
                             tx.note.isNotEmpty
                                 ? tx.note
-                                : (tx.categoryName ?? 'Giao dịch'),
+                                : (tx.categoryName ??
+                                      (isVi ? 'Giao dịch' : 'Transaction')),
                           ),
                           subtitle: Text(tx.date.toString().split(' ')[0]),
                           trailing: Text(
@@ -84,7 +97,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceCard(double balance) {
+  Widget _buildBalanceCard(double balance, bool isVi) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(16),
@@ -98,9 +111,9 @@ class HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Tổng số dư",
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+          Text(
+            isVi ? "Tổng số dư" : "Total Balance",
+            style: const TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(

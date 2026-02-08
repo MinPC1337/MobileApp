@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/dashboard_cubit.dart';
 import '../bloc/budget/budget_cubit.dart';
+import '../bloc/setting/settings_cubit.dart';
 import 'home_page.dart';
 import 'budget_page.dart';
 import 'settings_page.dart';
@@ -23,6 +24,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Lắng nghe thay đổi ngôn ngữ
+    final isVi =
+        context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     final List<Widget> pages = [
       const HomePage(),
       const TransactionPage(),
@@ -31,10 +35,10 @@ class _DashboardPageState extends State<DashboardPage> {
     ];
 
     final List<String> titles = [
-      "Trang chủ",
-      "Giao dịch",
-      "Ngân sách",
-      "Cài đặt",
+      isVi ? "Trang chủ" : "Home",
+      isVi ? "Giao dịch" : "Transactions",
+      isVi ? "Ngân sách" : "Budget",
+      isVi ? "Cài đặt" : "Settings",
     ];
 
     return Scaffold(
@@ -44,14 +48,14 @@ class _DashboardPageState extends State<DashboardPage> {
           if (_selectedIndex == 0)
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Tải lại',
+              tooltip: isVi ? 'Tải lại' : 'Refresh',
               onPressed: () =>
                   context.read<DashboardCubit>().loadDashboardData(),
             ),
           if (_selectedIndex == 1)
             IconButton(
               icon: const Icon(Icons.category_outlined),
-              tooltip: 'Quản lý Danh mục',
+              tooltip: isVi ? 'Quản lý Danh mục' : 'Manage Categories',
               onPressed: () {
                 Navigator.of(context)
                     .push(
@@ -75,14 +79,23 @@ class _DashboardPageState extends State<DashboardPage> {
         onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType
             .fixed, // Cố định icon để không bị hiệu ứng nhảy khi có >3 item
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Trang chủ"),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: "Giao dịch"),
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart),
-            label: "Ngân sách",
+            icon: const Icon(Icons.home),
+            label: isVi ? "Trang chủ" : "Home",
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Cài đặt"),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.list),
+            label: isVi ? "Giao dịch" : "Transactions",
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.pie_chart),
+            label: isVi ? "Ngân sách" : "Budget",
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.settings),
+            label: isVi ? "Cài đặt" : "Settings",
+          ),
         ],
       ),
       floatingActionButton:

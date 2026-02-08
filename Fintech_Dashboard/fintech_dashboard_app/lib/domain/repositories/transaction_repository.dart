@@ -15,4 +15,7 @@ abstract class TransactionRepository {
 
   // Đồng bộ các giao dịch chưa được đẩy lên Cloud
   Future<void> syncPendingTransactions({required String userId});
+
+  // Xóa dữ liệu local
+  Future<void> clearLocalData();
 }

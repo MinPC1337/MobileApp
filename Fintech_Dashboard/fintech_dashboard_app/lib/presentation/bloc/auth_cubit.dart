@@ -161,6 +161,15 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // Hàm xóa dữ liệu local
+  Future<void> clearLocalData() async {
+    try {
+      await transactionRepository.clearLocalData();
+    } catch (e) {
+      // Xử lý lỗi nếu cần thiết
+    }
+  }
+
   @override
   Future<void> close() {
     _authSubscription?.cancel();

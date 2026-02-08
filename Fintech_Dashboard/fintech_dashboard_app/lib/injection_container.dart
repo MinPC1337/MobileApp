@@ -36,6 +36,7 @@ import 'presentation/bloc/auth_cubit.dart';
 import 'domain/usecases/transactions/get_transactions_usecase.dart';
 import 'presentation/bloc/budget/budget_cubit.dart';
 import 'presentation/bloc/category_cubit.dart';
+import 'presentation/bloc/setting/settings_cubit.dart';
 import 'presentation/bloc/transaction_form_cubit.dart';
 
 final sl = GetIt.instance; // sl: Service Locator
@@ -59,6 +60,10 @@ Future<void> init() async {
       transactionRepository: sl(),
     ),
   );
+
+  // Settings Cubit
+  sl.registerLazySingleton(() => SettingsCubit());
+
   // Đăng ký TransactionFormCubit
   sl.registerFactory(
     () => TransactionFormCubit(
