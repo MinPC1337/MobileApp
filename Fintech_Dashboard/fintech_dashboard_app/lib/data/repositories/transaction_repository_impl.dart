@@ -23,7 +23,11 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
     // 2. LƯU VÀO MÁY TRƯỚC (SQLite)
     // is_synced lúc này mặc định là 0 (false)
-    final localId = await db.insert('transactions', transactionModel.toMap());
+    final map = transactionModel.toMap();
+    if (map['id'] == null) {
+      map.remove('id');
+    }
+    final localId = await db.insert('transactions', map);
     final firestoreMap = transactionModel.toMap();
     firestoreMap['id'] = localId;
     firestoreMap['is_synced'] =
@@ -157,36 +161,24 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<List<TransactionEntity>> getTransactions({
     required String userId,
   }) async {
-    // --- BẮT ĐẦU ĐOẠN MÃ MỚI: ĐỒNG BỘ TỪ FIREBASE VỀ LOCAL ---
     try {
-      // 1. (Tùy chọn) Đẩy các thay đổi chưa đồng bộ lên trước để tránh mất dữ liệu
       await syncPendingTransactions(userId: userId);
-
-      // 2. Lấy dữ liệu mới nhất từ Firebase
-      // Lưu ý: Bạn cần đảm bảo remoteDataSource có hàm getTransactions(String userId)
-      // trả về List<TransactionModel>
       final remoteModels = await remoteDataSource
           .getTransactions(userId)
           .timeout(const Duration(seconds: 3));
 
       final db = await dbHelper.database;
       await db.transaction((txn) async {
-        // 3. CHỈ Xóa những dữ liệu ĐÃ ĐỒNG BỘ (is_synced = 1) của user này
-        // Giữ lại các giao dịch chưa đồng bộ (is_synced = 0) để không bị mất khi offline
         await txn.delete(
           'transactions',
           where: 'user_id = ? AND is_synced = 1',
           whereArgs: [userId],
         );
 
-        // 4. Chèn lại dữ liệu mới từ Firebase (Dùng ConflictAlgorithm.replace)
-        // Nếu ID trùng với ID đang có (trường hợp vừa sync xong), nó sẽ ghi đè
         for (var model in remoteModels) {
-          // Đánh dấu là đã đồng bộ (is_synced = 1)
           final map = model.toMap();
           map['is_synced'] = 1;
 
-          // Sử dụng replace để nếu ID đã tồn tại thì cập nhật lại thông tin mới nhất
           await txn.insert(
             'transactions',
             map,
@@ -200,9 +192,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     final db = await dbHelper.database;
-    // Thay đổi: Sử dụng rawQuery với JOIN để lấy thông tin danh mục.
-    // Giả định rằng TransactionModel và TransactionEntity đã được cập nhật
-    // để chứa các trường như categoryName, categoryType.
     final List<Map<String, dynamic>> maps = await db.rawQuery(
       '''
       SELECT

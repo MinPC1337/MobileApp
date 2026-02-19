@@ -33,9 +33,11 @@ class CategoryRemoteDataSourceImpl implements CategoryRemoteDataSource {
         .collection('categories')
         .get();
 
-    return snapshot.docs
-        .map((doc) => CategoryModel.fromMap(doc.data()))
-        .toList();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = int.tryParse(doc.id); // Lấy ID từ document và gán vào map
+      return CategoryModel.fromMap(data);
+    }).toList();
   }
 
   @override

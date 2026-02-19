@@ -5,4 +5,6 @@ abstract class BudgetRepository {
   Future<void> updateBudget(BudgetEntity budget);
   Future<void> deleteBudget(BudgetEntity budget);
   Future<List<BudgetEntity>> getBudgets(String userId);
+  Future<void> syncPendingBudgets({required String userId});
+  Future<void> clearLocalData();
 }

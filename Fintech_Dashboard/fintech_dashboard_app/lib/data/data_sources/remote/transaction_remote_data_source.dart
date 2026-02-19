@@ -21,9 +21,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
         .collection('transactions')
         .get();
 
-    return snapshot.docs
-        .map((doc) => TransactionModel.fromMap(doc.data()))
-        .toList();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = int.tryParse(doc.id); // Lấy ID từ document và gán vào map
+      return TransactionModel.fromMap(data);
+    }).toList();
   }
 
   @override

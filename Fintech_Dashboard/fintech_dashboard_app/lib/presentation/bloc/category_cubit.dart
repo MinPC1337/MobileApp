@@ -57,6 +57,7 @@ class CategoryCubit extends Cubit<CategoryState> {
       await loadCategories();
     } catch (e) {
       // Có thể emit một state lỗi để hiển thị thông báo
+      emit(state.copyWith(errorMessage: 'Không thể thêm danh mục: $e'));
     }
   }
 

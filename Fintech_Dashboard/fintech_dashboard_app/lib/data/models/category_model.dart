@@ -8,6 +8,7 @@ class CategoryModel extends CategoryEntity {
     required super.icon,
     super.userId,
     required super.updatedAt,
+    super.isSynced,
   });
 
   factory CategoryModel.fromMap(Map<String, dynamic> map) {
@@ -18,6 +19,7 @@ class CategoryModel extends CategoryEntity {
       icon: map['icon'],
       userId: map['user_id'],
       updatedAt: DateTime.parse(map['updated_at']),
+      isSynced: map['is_synced'] == 1,
     );
   }
 
@@ -29,6 +31,7 @@ class CategoryModel extends CategoryEntity {
       'icon': icon,
       'user_id': userId,
       'updated_at': updatedAt.toIso8601String(),
+      'is_synced': isSynced ? 1 : 0,
     };
   }
 
@@ -40,6 +43,7 @@ class CategoryModel extends CategoryEntity {
       icon: entity.icon,
       userId: entity.userId,
       updatedAt: entity.updatedAt,
+      isSynced: entity.isSynced,
     );
   }
 }

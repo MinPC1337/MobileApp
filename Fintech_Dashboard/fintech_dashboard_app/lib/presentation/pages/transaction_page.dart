@@ -50,7 +50,6 @@ class TransactionPage extends StatelessWidget {
 
         return Column(
           children: [
-            // Có thể thêm bộ lọc thời gian ở đây sau này
             Expanded(
               child: ListView.builder(
                 itemCount: categoryKeys.length,
@@ -65,11 +64,10 @@ class TransactionPage extends StatelessWidget {
                     if (t.categoryType == 'income') {
                       categoryTotal += t.amount;
                     } else {
-                      categoryTotal -= t
-                          .amount; // Chi phí thì trừ đi (hoặc cộng dồn tùy cách hiển thị)
+                      categoryTotal -= t.amount;
                     }
                   }
-                  // Hiển thị trị tuyệt đối cho đẹp, hoặc hiển thị âm dương tùy ý
+
                   final displayTotal = categoryTotal.abs();
 
                   return ExpansionTile(
@@ -91,8 +89,7 @@ class TransactionPage extends StatelessWidget {
                       // Chức năng vuốt để xóa
                       return Dismissible(
                         key: ValueKey(tx.id),
-                        direction: DismissDirection
-                            .endToStart, // Vuốt từ phải sang trái
+                        direction: DismissDirection.endToStart,
                         background: Container(
                           color: Colors.red,
                           alignment: Alignment.centerRight,
@@ -134,7 +131,6 @@ class TransactionPage extends StatelessWidget {
                           return confirmed ?? false;
                         },
                         onDismissed: (direction) {
-                          // Gọi cubit để xóa và hiển thị thông báo
                           context.read<DashboardCubit>().deleteTransaction(
                             tx as TransactionEntity,
                           );

@@ -47,7 +47,8 @@ class DatabaseHelper {
         type $textType, -- 'income' hoặc 'expense'
         icon $textType,
         user_id TEXT, -- Null nếu là danh mục mặc định
-        updated_at $textType
+        updated_at $textType,
+        is_synced $boolType DEFAULT 0
       )
     ''');
 
@@ -75,6 +76,7 @@ class DatabaseHelper {
         category_id INTEGER,
         user_id $textType,
         created_at $textType,
+        is_synced $boolType DEFAULT 0,
         FOREIGN KEY (category_id) REFERENCES categories (id),
         FOREIGN KEY (user_id) REFERENCES users (id)
       )
@@ -82,10 +84,10 @@ class DatabaseHelper {
 
     // Chèn một số danh mục mặc định
     await db.rawInsert(
-      'INSERT INTO categories(name, type, icon, updated_at) VALUES("Ăn uống", "expense", "fastfood", "${DateTime.now().toIso8601String()}")',
+      'INSERT INTO categories(name, type, icon, updated_at, is_synced) VALUES("Ăn uống", "expense", "fastfood", "${DateTime.now().toIso8601String()}", 1)',
     );
     await db.rawInsert(
-      'INSERT INTO categories(name, type, icon, updated_at) VALUES("Lương", "income", "payments", "${DateTime.now().toIso8601String()}")',
+      'INSERT INTO categories(name, type, icon, updated_at, is_synced) VALUES("Lương", "income", "payments", "${DateTime.now().toIso8601String()}", 1)',
     );
   }
 

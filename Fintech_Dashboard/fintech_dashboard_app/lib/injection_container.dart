@@ -58,13 +58,15 @@ Future<void> init() async {
       sendPasswordResetEmailUseCase: sl(),
       sendEmailVerificationUseCase: sl(),
       transactionRepository: sl(),
+      categoryRepository: sl(),
+      budgetRepository: sl(),
     ),
   );
 
-  // Settings Cubit
+  // Settings
   sl.registerLazySingleton(() => SettingsCubit());
 
-  // Đăng ký TransactionFormCubit
+  // TransactionFormCubit
   sl.registerFactory(
     () => TransactionFormCubit(
       addTransactionUseCase: sl(),
@@ -72,7 +74,7 @@ Future<void> init() async {
     ),
   );
 
-  // Cubit for Category Management, requires userId as a parameter
+  // Category Management
   sl.registerFactoryParam<CategoryCubit, String, void>(
     (userId, _) => CategoryCubit(
       getCategoriesUseCase: sl(),
@@ -83,7 +85,7 @@ Future<void> init() async {
     ),
   );
 
-  // Cubit for Budget Management
+  // Budget Management
   sl.registerFactoryParam<BudgetCubit, String, void>(
     (userId, _) => BudgetCubit(
       getBudgetsUseCase: sl(),
@@ -126,7 +128,6 @@ Future<void> init() async {
     () => AuthRepositoryImpl(remoteDataSource: sl(), dbHelper: sl()),
   );
 
-  // -- Transaction Feature --
   // Data Sources
   sl.registerLazySingleton<TransactionRemoteDataSource>(
     () => TransactionRemoteDataSourceImpl(sl()),
@@ -138,7 +139,6 @@ Future<void> init() async {
     () => BudgetRemoteDataSourceImpl(sl()),
   );
 
-  // Khi ứng dụng yêu cầu TransactionRepository, GetIt sẽ trả về TransactionRepositoryImpl
   sl.registerLazySingleton<TransactionRepository>(
     () => TransactionRepositoryImpl(dbHelper: sl(), remoteDataSource: sl()),
   );

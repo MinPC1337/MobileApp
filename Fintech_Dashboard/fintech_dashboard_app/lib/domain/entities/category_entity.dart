@@ -8,6 +8,7 @@ class CategoryEntity extends Equatable {
   final String? userId;
   final DateTime updatedAt;
 
+  final bool isSynced;
   const CategoryEntity({
     this.id,
     required this.name,
@@ -15,8 +16,17 @@ class CategoryEntity extends Equatable {
     required this.icon,
     this.userId,
     required this.updatedAt,
+    this.isSynced = false,
   });
 
   @override
-  List<Object?> get props => [id, name, type, icon, userId, updatedAt];
+  List<Object?> get props => [
+    id,
+    name,
+    type,
+    icon,
+    userId,
+    updatedAt,
+    isSynced,
+  ];
 }

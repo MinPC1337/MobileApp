@@ -51,6 +51,10 @@ class BudgetRemoteDataSourceImpl implements BudgetRemoteDataSource {
         .collection('budgets')
         .get();
 
-    return snapshot.docs.map((doc) => BudgetModel.fromMap(doc.data())).toList();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = int.tryParse(doc.id); // Lấy ID từ document và gán vào map
+      return BudgetModel.fromMap(data);
+    }).toList();
   }
 }

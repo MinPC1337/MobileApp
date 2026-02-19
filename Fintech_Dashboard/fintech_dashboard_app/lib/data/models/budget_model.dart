@@ -7,6 +7,7 @@ class BudgetModel extends BudgetEntity {
     required super.categoryId,
     required super.userId,
     required super.createdAt,
+    super.isSynced,
   });
 
   factory BudgetModel.fromMap(Map<String, dynamic> map) {
@@ -16,6 +17,7 @@ class BudgetModel extends BudgetEntity {
       categoryId: map['category_id'],
       userId: map['user_id'],
       createdAt: DateTime.parse(map['created_at']),
+      isSynced: map['is_synced'] == 1,
     );
   }
 
@@ -26,6 +28,7 @@ class BudgetModel extends BudgetEntity {
       'category_id': categoryId,
       'user_id': userId,
       'created_at': createdAt.toIso8601String(),
+      'is_synced': isSynced ? 1 : 0,
     };
   }
 
@@ -36,6 +39,7 @@ class BudgetModel extends BudgetEntity {
       categoryId: entity.categoryId,
       userId: entity.userId,
       createdAt: entity.createdAt,
+      isSynced: entity.isSynced,
     );
   }
 }

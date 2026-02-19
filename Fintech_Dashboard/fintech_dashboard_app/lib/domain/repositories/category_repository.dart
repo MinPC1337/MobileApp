@@ -5,4 +5,6 @@ abstract class CategoryRepository {
   Future<void> addCategory(CategoryEntity category);
   Future<void> updateCategory(CategoryEntity category);
   Future<void> deleteCategory(CategoryEntity category);
+  Future<void> syncPendingCategories({required String userId});
+  Future<void> clearLocalData();
 }
