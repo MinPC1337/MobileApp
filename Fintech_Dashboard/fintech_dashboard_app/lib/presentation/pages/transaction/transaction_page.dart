@@ -100,32 +100,39 @@ class _TransactionPageState extends State<TransactionPage> {
               color: Theme.of(context).cardColor,
               child: Column(
                 children: [
-                  // Thanh tìm kiếm
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: isVi
-                          ? 'Tìm kiếm giao dịch...'
-                          : 'Search transactions...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  Row(
+                    children: [
+                      // Thanh tìm kiếm
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: isVi
+                                ? 'Tìm kiếm giao dịch...'
+                                : 'Search transactions...',
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                              horizontal: 10,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                          ),
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 0,
-                        horizontal: 10,
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                    ),
-                    onChanged: (value) => setState(() => _searchQuery = value),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   // Các nút lọc
