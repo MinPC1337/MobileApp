@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/auth_cubit.dart';
-import '../bloc/auth_state.dart';
-import '../bloc/setting/settings_cubit.dart';
-import '../bloc/setting/settings_state.dart';
+import '../../bloc/auth/auth_cubit.dart';
+import '../../bloc/auth/auth_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
+import '../../bloc/setting/settings_state.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

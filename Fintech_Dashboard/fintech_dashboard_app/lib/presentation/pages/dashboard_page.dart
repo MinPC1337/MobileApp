@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/dashboard_cubit.dart';
+import '../bloc/dashboard/dashboard_cubit.dart';
 import '../bloc/budget/budget_cubit.dart';
 import '../bloc/setting/settings_cubit.dart';
-import 'home_page.dart';
-import 'budget_page.dart';
-import 'settings_page.dart';
-import 'transaction_page.dart';
-import 'category_management_page.dart';
-import 'add_edit_transaction_page.dart';
-import '../bloc/transaction_form_cubit.dart';
+import 'home/home_page.dart';
+import 'budget/budget_page.dart';
+import 'setting/settings_page.dart';
+import 'transaction/transaction_page.dart';
+import 'transaction/category_management_page.dart';
+import 'transaction/add_edit_transaction_page.dart';
+import '../bloc/transaction/transaction_form_cubit.dart';
 import '../../injection_container.dart' as di;
 
 class DashboardPage extends StatefulWidget {

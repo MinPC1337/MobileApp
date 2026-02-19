@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/transaction_entity.dart';
-import '../bloc/budget/budget_cubit.dart';
-import '../bloc/dashboard_cubit.dart';
-import '../bloc/dashboard_state.dart';
-import '../bloc/setting/settings_cubit.dart';
+import '../../../domain/entities/transaction_entity.dart';
+import '../../bloc/budget/budget_cubit.dart';
+import '../../bloc/dashboard/dashboard_cubit.dart';
+import '../../bloc/dashboard/dashboard_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
 import 'add_edit_transaction_page.dart';
 
 class TransactionPage extends StatelessWidget {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/budget_entity.dart';
-import '../../domain/entities/category_entity.dart';
-import '../bloc/budget/budget_cubit.dart';
-import '../bloc/budget/budget_state.dart';
-import '../bloc/setting/settings_cubit.dart';
-import 'category_management_page.dart';
+import '../../../domain/entities/budget_entity.dart';
+import '../../../domain/entities/category_entity.dart';
+import '../../bloc/budget/budget_cubit.dart';
+import '../../bloc/budget/budget_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
+import '../transaction/category_management_page.dart';
 
 class BudgetPage extends StatelessWidget {
   const BudgetPage({super.key});

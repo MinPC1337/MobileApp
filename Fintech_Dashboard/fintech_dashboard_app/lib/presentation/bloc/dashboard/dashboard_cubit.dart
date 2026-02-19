@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dashboard_state.dart';
-import '../../domain/entities/transaction_entity.dart';
-import '../../domain/usecases/transactions/get_transactions_usecase.dart';
-import '../../domain/usecases/transactions/delete_transaction_usecase.dart';
+import '../../../domain/entities/transaction_entity.dart';
+import '../../../domain/usecases/transactions/get_transactions_usecase.dart';
+import '../../../domain/usecases/transactions/delete_transaction_usecase.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
   final GetTransactionsUseCase getTransactionsUseCase;

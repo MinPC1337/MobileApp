@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/category_entity.dart';
-import '../../domain/entities/transaction_entity.dart';
-import '../../injection_container.dart' as di;
-import '../bloc/auth_cubit.dart';
-import '../bloc/auth_state.dart';
-import '../bloc/category_cubit.dart';
-import '../bloc/category_state.dart' as cat_state;
-import '../bloc/transaction_form_cubit.dart';
-import '../bloc/transaction_form_state.dart';
-import '../bloc/setting/settings_cubit.dart';
+import '../../../domain/entities/category_entity.dart';
+import '../../../domain/entities/transaction_entity.dart';
+import '../../../injection_container.dart' as di;
+import '../../bloc/auth/auth_cubit.dart';
+import '../../bloc/auth/auth_state.dart';
+import '../../bloc/category/category_cubit.dart';
+import '../../bloc/category/category_state.dart' as cat_state;
+import '../../bloc/transaction/transaction_form_cubit.dart';
+import '../../bloc/transaction/transaction_form_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
 
 class AddEditTransactionPage extends StatelessWidget {
   final TransactionEntity? transaction;

@@ -2,17 +2,17 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'auth_state.dart';
-import '../../domain/entities/user_entity.dart';
-import '../../domain/usecases/auth/sign_in_usecase.dart';
-import '../../domain/usecases/auth/register_user_usecase.dart';
-import '../../domain/usecases/auth/get_current_user_usecase.dart';
-import '../../domain/usecases/auth/sign_out_usecase.dart';
-import '../../domain/usecases/auth/get_auth_state_stream_usecase.dart';
-import '../../domain/usecases/auth/send_password_reset_email_usecase.dart';
-import '../../domain/usecases/auth/send_email_verification_usecase.dart';
-import '../../domain/repositories/transaction_repository.dart';
-import '../../domain/repositories/category_repository.dart';
-import '../../domain/repositories/budget_repository.dart';
+import '../../../domain/entities/user_entity.dart';
+import '../../../domain/usecases/auth/sign_in_usecase.dart';
+import '../../../domain/usecases/auth/register_user_usecase.dart';
+import '../../../domain/usecases/auth/get_current_user_usecase.dart';
+import '../../../domain/usecases/auth/sign_out_usecase.dart';
+import '../../../domain/usecases/auth/get_auth_state_stream_usecase.dart';
+import '../../../domain/usecases/auth/send_password_reset_email_usecase.dart';
+import '../../../domain/usecases/auth/send_email_verification_usecase.dart';
+import '../../../domain/repositories/transaction_repository.dart';
+import '../../../domain/repositories/category_repository.dart';
+import '../../../domain/repositories/budget_repository.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   final RegisterUserUseCase registerUserUseCase;

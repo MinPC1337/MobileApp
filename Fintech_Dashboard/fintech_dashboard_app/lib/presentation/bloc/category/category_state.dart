@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../domain/entities/category_entity.dart';
+import '../../../../domain/entities/category_entity.dart';
 
 class CategoryState extends Equatable {
   final bool isLoading;

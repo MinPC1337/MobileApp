@@ -1,9 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../domain/entities/category_entity.dart';
-import '../../../domain/usecases/categories/add_category_usecase.dart';
-import '../../../domain/usecases/categories/get_categories_usecase.dart';
-import '../../../domain/usecases/categories/update_category_usecase.dart';
-import '../../../domain/usecases/categories/delete_category_usecase.dart';
+import '../../../../domain/entities/category_entity.dart';
+import '../../../../domain/usecases/categories/add_category_usecase.dart';
+import '../../../../domain/usecases/categories/get_categories_usecase.dart';
+import '../../../../domain/usecases/categories/update_category_usecase.dart';
+import '../../../../domain/usecases/categories/delete_category_usecase.dart';
 import 'category_state.dart';
 
 class CategoryCubit extends Cubit<CategoryState> {

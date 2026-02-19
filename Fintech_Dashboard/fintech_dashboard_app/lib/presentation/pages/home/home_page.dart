@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/dashboard_cubit.dart';
-import '../bloc/dashboard_state.dart';
-import '../bloc/setting/settings_cubit.dart';
+import '../../bloc/dashboard/dashboard_cubit.dart';
+import '../../bloc/dashboard/dashboard_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

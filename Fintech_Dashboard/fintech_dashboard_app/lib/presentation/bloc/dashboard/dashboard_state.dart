@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/transaction_entity.dart';
+import '../../../domain/entities/transaction_entity.dart';
 
 class DashboardState extends Equatable {
   final bool isLoading;

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domain/entities/category_entity.dart';
-import '../../injection_container.dart' as di;
-import '../bloc/auth_cubit.dart';
-import '../bloc/auth_state.dart';
-import '../bloc/category_cubit.dart';
-import '../bloc/category_state.dart';
-import '../bloc/setting/settings_cubit.dart';
+import '../../../domain/entities/category_entity.dart';
+import '../../../injection_container.dart' as di;
+import '../../bloc/auth/auth_cubit.dart';
+import '../../bloc/auth/auth_state.dart';
+import '../../bloc/category/category_cubit.dart';
+import '../../bloc/category/category_state.dart';
+import '../../bloc/setting/settings_cubit.dart';
 
 class CategoryManagementPage extends StatelessWidget {
   const CategoryManagementPage({super.key});
