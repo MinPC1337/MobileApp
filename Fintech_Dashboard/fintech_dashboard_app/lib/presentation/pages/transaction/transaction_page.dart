@@ -7,8 +7,24 @@ import '../../bloc/dashboard/dashboard_state.dart';
 import '../../bloc/setting/settings_cubit.dart';
 import 'add_edit_transaction_page.dart';
 
-class TransactionPage extends StatelessWidget {
+class TransactionPage extends StatefulWidget {
   const TransactionPage({super.key});
+
+  @override
+  State<TransactionPage> createState() => _TransactionPageState();
+}
+
+class _TransactionPageState extends State<TransactionPage> {
+  String _searchQuery = '';
+  String _filterType = 'all'; // 'all', 'income', 'expense'
+  DateTimeRange? _selectedDateRange;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +50,37 @@ class TransactionPage extends StatelessWidget {
           );
         }
 
+        // --- LOGIC LỌC DỮ LIỆU ---
+        final filteredTransactions = state.transactions.where((tx) {
+          // 1. Lọc theo từ khóa tìm kiếm (Ghi chú hoặc Tên danh mục)
+          final note = tx.note.toLowerCase();
+          final category = (tx.categoryName ?? '').toLowerCase();
+          final query = _searchQuery.toLowerCase();
+          final matchesSearch =
+              note.contains(query) || category.contains(query);
+
+          // 2. Lọc theo loại (Thu/Chi)
+          final matchesType =
+              _filterType == 'all' || tx.categoryType == _filterType;
+
+          // 3. Lọc theo ngày
+          bool matchesDate = true;
+          if (_selectedDateRange != null) {
+            // Chuẩn hóa ngày để so sánh chính xác (bỏ qua giờ phút giây)
+            final txDate = DateTime(tx.date.year, tx.date.month, tx.date.day);
+            final start = _selectedDateRange!.start;
+            final end = _selectedDateRange!.end;
+            // start <= txDate <= end
+            matchesDate = !txDate.isBefore(start) && !txDate.isAfter(end);
+          }
+
+          return matchesSearch && matchesType && matchesDate;
+        }).toList();
+        // -------------------------
+
         // Logic nhóm giao dịch theo danh mục (chuyển từ HomePage sang)
         final groupedTransactions = <String, List<dynamic>>{};
-        for (final tx in state.transactions) {
+        for (final tx in filteredTransactions) {
           final categoryName =
               tx.categoryName ?? (isVi ? 'Chưa phân loại' : 'Uncategorized');
           if (groupedTransactions[categoryName] == null) {
@@ -50,6 +94,107 @@ class TransactionPage extends StatelessWidget {
 
         return Column(
           children: [
+            // --- THANH TÌM KIẾM VÀ BỘ LỌC ---
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              color: Theme.of(context).cardColor,
+              child: Column(
+                children: [
+                  // Thanh tìm kiếm
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: isVi
+                          ? 'Tìm kiếm giao dịch...'
+                          : 'Search transactions...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 10,
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                  ),
+                  const SizedBox(height: 8),
+                  // Các nút lọc
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Lọc theo ngày
+                        ActionChip(
+                          avatar: const Icon(Icons.calendar_today, size: 16),
+                          label: Text(
+                            _selectedDateRange == null
+                                ? (isVi ? 'Tất cả thời gian' : 'All time')
+                                : '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}',
+                          ),
+                          onPressed: () async {
+                            final picked = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                              initialDateRange: _selectedDateRange,
+                            );
+                            if (picked != null) {
+                              setState(() => _selectedDateRange = picked);
+                            } else {
+                              // Nếu user hủy hoặc muốn xóa lọc ngày, có thể thêm logic xóa ở đây
+                              // Hiện tại giữ nguyên nếu hủy
+                            }
+                          },
+                        ),
+                        if (_selectedDateRange != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () =>
+                                setState(() => _selectedDateRange = null),
+                          ),
+                        const SizedBox(width: 8),
+                        // Lọc theo loại (ChoiceChips)
+                        Wrap(
+                          spacing: 8.0,
+                          children: [
+                            _buildFilterChip(
+                              label: isVi ? 'Tất cả' : 'All',
+                              value: 'all',
+                              isSelected: _filterType == 'all',
+                            ),
+                            _buildFilterChip(
+                              label: isVi ? 'Thu nhập' : 'Income',
+                              value: 'income',
+                              isSelected: _filterType == 'income',
+                              color: Colors.green.withValues(),
+                            ),
+                            _buildFilterChip(
+                              label: isVi ? 'Chi tiêu' : 'Expense',
+                              value: 'expense',
+                              isSelected: _filterType == 'expense',
+                              color: Colors.red.withValues(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // --------------------------------
             Expanded(
               child: ListView.builder(
                 itemCount: categoryKeys.length,
@@ -186,6 +331,22 @@ class TransactionPage extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required String value,
+    required bool isSelected,
+    Color? color,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) setState(() => _filterType = value);
+      },
+      selectedColor: color ?? Theme.of(context).primaryColor.withValues(),
     );
   }
 }
