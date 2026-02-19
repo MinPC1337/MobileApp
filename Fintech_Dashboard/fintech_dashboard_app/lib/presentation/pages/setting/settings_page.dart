@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -392,7 +394,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   tx.categoryName ?? '',
                   tx.note,
                   type,
-                  '${tx.amount.toStringAsFixed(0)}',
+                  tx.amount.toStringAsFixed(0),
                 ];
               }).toList(),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
