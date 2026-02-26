@@ -75,6 +75,8 @@ class DatabaseHelper {
         amount $numType,
         category_id INTEGER,
         user_id $textType,
+        start_date TEXT NOT NULL, 
+        end_date TEXT NOT NULL,   
         created_at $textType,
         is_synced $boolType DEFAULT 0,
         FOREIGN KEY (category_id) REFERENCES categories (id),

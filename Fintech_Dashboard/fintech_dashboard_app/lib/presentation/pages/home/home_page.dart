@@ -490,8 +490,14 @@ class HomePage extends StatelessWidget {
       final spent = transactions
           .where(
             (t) =>
-                t.categoryId == budget.categoryId &&
-                t.categoryType == 'expense',
+                t.categoryId == budget.categoryId && // Đúng danh mục
+                t.categoryType == 'expense' && // Là chi tiêu
+                !t.date.isBefore(
+                  budget.startDate,
+                ) && // Sau hoặc bằng ngày bắt đầu
+                t.date.isBefore(
+                  budget.endDate.add(const Duration(days: 1)),
+                ), // Trước hoặc bằng ngày kết thúc
           )
           .fold(0.0, (sum, t) => sum + t.amount);
 

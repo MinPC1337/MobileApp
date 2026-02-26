@@ -59,8 +59,14 @@ class BudgetPage extends StatelessWidget {
               final spentAmount = state.transactions
                   .where(
                     (t) =>
-                        t.categoryId == budget.categoryId &&
-                        t.categoryType == 'expense', // Chỉ tính chi tiêu
+                        t.categoryId == budget.categoryId && // Đúng danh mục
+                        t.categoryType == 'expense' && // Là chi tiêu
+                        !t.date.isBefore(
+                          budget.startDate,
+                        ) && // Sau hoặc bằng ngày bắt đầu
+                        t.date.isBefore(
+                          budget.endDate.add(const Duration(days: 1)),
+                        ), // Trước hoặc bằng ngày kết thúc
                   )
                   .fold(0.0, (sum, t) => sum + t.amount);
 
@@ -128,6 +134,14 @@ class BudgetPage extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.startDate)} - ${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.endDate)}",
+                                  style: TextStyle(
+                                    color: Theme.of(context).hintColor,
+                                    fontSize: 12,
                                   ),
                                 ),
                                 Text(
@@ -274,6 +288,12 @@ class BudgetPage extends StatelessWidget {
     final amountController = TextEditingController();
     int? selectedCategoryId;
     // Lọc chỉ lấy danh mục chi tiêu (expense)
+    final now = DateTime.now();
+    DateTimeRange selectedDateRange = DateTimeRange(
+      start: DateTime(now.year, now.month, 1),
+      end: DateTime(now.year, now.month + 1, 0),
+    );
+
     // Cải tiến: So sánh không phân biệt hoa thường và xóa khoảng trắng thừa
     final expenseCategories = categories
         .where((c) => c.type.trim().toLowerCase() == 'expense')
@@ -315,91 +335,134 @@ class BudgetPage extends StatelessWidget {
 
     showDialog(
       context: context,
+      // Sử dụng StatefulBuilder để quản lý trạng thái (ngày tháng) bên trong dialog
       builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28.0),
-          ),
-          title: Text(isVi ? "Thiết lập ngân sách" : "Set Budget"),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  decoration: InputDecoration(
-                    labelText: isVi ? "Danh mục" : "Category",
-                    prefixIcon: const Icon(Icons.category_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+        return StatefulBuilder(
+          builder: (stfContext, stfSetState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28.0),
+              ),
+              title: Text(isVi ? "Thiết lập ngân sách" : "Set Budget"),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: isVi ? "Danh mục" : "Category",
+                        prefixIcon: const Icon(Icons.category_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      items: expenseCategories.map((c) {
+                        return DropdownMenuItem(
+                          value: c.id,
+                          child: Text(c.name),
+                        );
+                      }).toList(),
+                      onChanged: (val) => selectedCategoryId = val,
+                      validator: (value) {
+                        if (value == null) {
+                          return isVi
+                              ? 'Vui lòng chọn danh mục'
+                              : 'Please select a category';
+                        }
+                        return null;
+                      },
                     ),
-                  ),
-                  items: expenseCategories.map((c) {
-                    return DropdownMenuItem(value: c.id, child: Text(c.name));
-                  }).toList(),
-                  onChanged: (val) => selectedCategoryId = val,
-                  validator: (value) {
-                    if (value == null) {
-                      return isVi
-                          ? 'Vui lòng chọn danh mục'
-                          : 'Please select a category';
-                    }
-                    return null;
-                  },
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDateRangePicker(
+                          context: context,
+                          initialDateRange: selectedDateRange,
+                          firstDate: DateTime(now.year - 5),
+                          lastDate: DateTime(now.year + 5),
+                          helpText: isVi
+                              ? 'Chọn khoảng thời gian'
+                              : 'Select date range',
+                          cancelText: isVi ? 'HỦY' : 'CANCEL',
+                          confirmText: isVi ? 'CHỌN' : 'OK',
+                        );
+                        if (picked != null) {
+                          stfSetState(() => selectedDateRange = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: isVi ? "Thời gian áp dụng" : "Date Range",
+                          prefixIcon: const Icon(Icons.date_range_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          '${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(selectedDateRange.start)} - ${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(selectedDateRange.end)}',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: amountController,
+                      decoration: InputDecoration(
+                        labelText: isVi ? "Số tiền giới hạn" : "Limit Amount",
+                        prefixIcon: const Icon(Icons.monetization_on_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return isVi
+                              ? 'Vui lòng nhập số tiền'
+                              : 'Please enter an amount';
+                        }
+                        final amount = double.tryParse(
+                          value.replaceAll(',', '.').trim(),
+                        );
+                        if (amount == null || amount <= 0) {
+                          return isVi
+                              ? 'Số tiền không hợp lệ'
+                              : 'Invalid amount';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: amountController,
-                  decoration: InputDecoration(
-                    labelText: isVi ? "Số tiền giới hạn" : "Limit Amount",
-                    prefixIcon: const Icon(Icons.monetization_on_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return isVi
-                          ? 'Vui lòng nhập số tiền'
-                          : 'Please enter an amount';
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(isVi ? "Hủy" : "Cancel"),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final amount = double.tryParse(
+                        amountController.text.replaceAll(',', '.').trim(),
+                      )!;
+                      cubit.addBudget(
+                        categoryId: selectedCategoryId!,
+                        amount: amount,
+                        startDate: selectedDateRange.start,
+                        endDate: selectedDateRange.end,
+                      );
+                      Navigator.pop(dialogContext);
                     }
-                    final amount = double.tryParse(
-                      value.replaceAll(',', '.').trim(),
-                    );
-                    if (amount == null || amount <= 0) {
-                      return isVi ? 'Số tiền không hợp lệ' : 'Invalid amount';
-                    }
-                    return null;
                   },
+                  child: Text(isVi ? "Lưu" : "Save"),
                 ),
               ],
-            ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(isVi ? "Hủy" : "Cancel"),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final amount = double.tryParse(
-                    amountController.text.replaceAll(',', '.').trim(),
-                  )!;
-                  cubit.addBudget(
-                    categoryId: selectedCategoryId!,
-                    amount: amount,
-                  );
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: Text(isVi ? "Lưu" : "Save"),
-            ),
-          ],
+            );
+          },
         );
       },
     );

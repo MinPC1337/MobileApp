@@ -75,6 +75,8 @@ class BudgetCubit extends Cubit<BudgetState> {
   Future<void> addBudget({
     required int categoryId,
     required double amount,
+    required DateTime startDate,
+    required DateTime endDate,
   }) async {
     // 1. Báo hiệu đang xử lý ngay lập tức để UI phản hồi (ẩn nút FAB, hiện loading...)
     emit(state.copyWith(isLoading: true, errorMessage: null));
@@ -83,6 +85,8 @@ class BudgetCubit extends Cubit<BudgetState> {
         amount: amount,
         categoryId: categoryId,
         userId: _userId,
+        startDate: startDate,
+        endDate: endDate,
         createdAt: DateTime.now(),
       );
 

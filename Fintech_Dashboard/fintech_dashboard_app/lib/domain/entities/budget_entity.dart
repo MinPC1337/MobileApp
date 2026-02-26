@@ -5,6 +5,8 @@ class BudgetEntity extends Equatable {
   final double amount;
   final int categoryId;
   final String userId;
+  final DateTime startDate;
+  final DateTime endDate;
   final DateTime createdAt;
 
   final bool isSynced;
@@ -13,6 +15,8 @@ class BudgetEntity extends Equatable {
     required this.amount,
     required this.categoryId,
     required this.userId,
+    required this.startDate,
+    required this.endDate,
     required this.createdAt,
     this.isSynced = false,
   });
@@ -23,6 +27,8 @@ class BudgetEntity extends Equatable {
     amount,
     categoryId,
     userId,
+    startDate,
+    endDate,
     createdAt,
     isSynced,
   ];
