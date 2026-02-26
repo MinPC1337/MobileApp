@@ -23,7 +23,7 @@ class BudgetRepositoryImpl implements BudgetRepository {
 
       final remoteBudgets = await remoteDataSource
           .getBudgets(userId)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 3));
 
       final db = await dbHelper.database;
       await db.transaction((txn) async {
@@ -84,7 +84,7 @@ class BudgetRepositoryImpl implements BudgetRepository {
 
       await remoteDataSource
           .addBudget(modelToSync)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
 
       // 3. Nếu thành công, cập nhật trạng thái đã sync
       await db.update(

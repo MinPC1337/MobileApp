@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../domain/entities/budget_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../bloc/budget/budget_cubit.dart';
 import '../../bloc/budget/budget_state.dart';
 import '../../bloc/setting/settings_cubit.dart';
+import '../../../core/utils/app_icons.dart';
 import '../transaction/category_management_page.dart';
 
 class BudgetPage extends StatelessWidget {
@@ -63,23 +65,80 @@ class BudgetPage extends StatelessWidget {
                   .fold(0.0, (sum, t) => sum + t.amount);
 
               final progress = (spentAmount / budget.amount).clamp(0.0, 1.0);
+              final percentage = (spentAmount / budget.amount) * 100;
               final isOverBudget = spentAmount > budget.amount;
+              final isWarning =
+                  !isOverBudget && spentAmount > (budget.amount * 0.7);
 
-              return Card(
+              Color statusColor;
+              String statusText = '';
+
+              if (isOverBudget) {
+                statusColor = Colors.red;
+                statusText = isVi
+                    ? "Bạn đã vượt quá ngân sách!"
+                    : "You have exceeded the budget!";
+              } else if (isWarning) {
+                statusColor = Colors.orange;
+                statusText = isVi
+                    ? "Bạn sắp hết ngân sách!"
+                    : "You are running out of budget!";
+              } else {
+                statusColor = Colors.blue;
+              }
+
+              return Container(
                 margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            category.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              AppIcons.getIconFromString(category.icon),
+                              color: statusColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  category.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "${percentage.toStringAsFixed(1)}%",
+                                  style: TextStyle(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           IconButton(
@@ -87,48 +146,67 @@ class BudgetPage extends StatelessWidget {
                               Icons.delete_outline,
                               color: Colors.grey,
                             ),
-                            onPressed: () {
-                              _confirmDelete(context, budget);
-                            },
+                            onPressed: () => _confirmDelete(context, budget),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.grey[200],
-                        color: isOverBudget ? Colors.red : Colors.blue,
-                        minHeight: 10,
-                        borderRadius: BorderRadius.circular(5),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).dividerColor.withOpacity(0.1),
+                          color: statusColor,
+                          minHeight: 8,
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "${spentAmount.toStringAsFixed(0)} đ",
+                            NumberFormat.currency(
+                              locale: isVi ? 'vi_VN' : 'en_US',
+                              symbol: 'đ',
+                              decimalDigits: 0,
+                            ).format(spentAmount),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isOverBudget ? Colors.red : Colors.black,
+                              color: statusColor,
+                              fontSize: 15,
                             ),
                           ),
                           Text(
-                            "${isVi ? 'Giới hạn' : 'Limit'}: ${budget.amount.toStringAsFixed(0)} đ",
-                            style: const TextStyle(color: Colors.grey),
+                            "${isVi ? 'Giới hạn' : 'Limit'}: ${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(budget.amount)}",
+                            style: TextStyle(
+                              color: Theme.of(context).hintColor,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
-                      if (isOverBudget)
+                      if (statusText.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            isVi
-                                ? "Bạn đã vượt quá ngân sách!"
-                                : "You have exceeded the budget!",
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontStyle: FontStyle.italic,
-                            ),
+                          padding: const EdgeInsets.only(top: 12.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 16,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                statusText,
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
@@ -192,6 +270,7 @@ class BudgetPage extends StatelessWidget {
     final isVi =
         context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     final cubit = context.read<BudgetCubit>();
+    final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController();
     int? selectedCategoryId;
     // Lọc chỉ lấy danh mục chi tiêu (expense)
@@ -238,49 +317,84 @@ class BudgetPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(isVi ? "Thiết lập ngân sách" : "Set Budget"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                decoration: InputDecoration(
-                  labelText: isVi ? "Danh mục" : "Category",
-                ),
-                items: expenseCategories.map((c) {
-                  return DropdownMenuItem(value: c.id, child: Text(c.name));
-                }).toList(),
-                onChanged: (val) => selectedCategoryId = val,
-              ),
-              TextField(
-                controller: amountController,
-                decoration: InputDecoration(
-                  labelText: isVi ? "Số tiền giới hạn" : "Limit Amount",
-                ),
-                keyboardType: TextInputType.number,
-                // Bạn có thể thêm inputFormatters ở đây nếu muốn chặn ký tự chữ
-              ),
-            ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28.0),
           ),
+          title: Text(isVi ? "Thiết lập ngân sách" : "Set Budget"),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<int>(
+                  decoration: InputDecoration(
+                    labelText: isVi ? "Danh mục" : "Category",
+                    prefixIcon: const Icon(Icons.category_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  items: expenseCategories.map((c) {
+                    return DropdownMenuItem(value: c.id, child: Text(c.name));
+                  }).toList(),
+                  onChanged: (val) => selectedCategoryId = val,
+                  validator: (value) {
+                    if (value == null) {
+                      return isVi
+                          ? 'Vui lòng chọn danh mục'
+                          : 'Please select a category';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: amountController,
+                  decoration: InputDecoration(
+                    labelText: isVi ? "Số tiền giới hạn" : "Limit Amount",
+                    prefixIcon: const Icon(Icons.monetization_on_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return isVi
+                          ? 'Vui lòng nhập số tiền'
+                          : 'Please enter an amount';
+                    }
+                    final amount = double.tryParse(
+                      value.replaceAll(',', '.').trim(),
+                    );
+                    if (amount == null || amount <= 0) {
+                      return isVi ? 'Số tiền không hợp lệ' : 'Invalid amount';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(isVi ? "Hủy" : "Cancel"),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () {
-                if (selectedCategoryId != null &&
-                    amountController.text.isNotEmpty) {
-                  // Xử lý dấu phẩy thành dấu chấm và xóa khoảng trắng thừa
+                if (formKey.currentState!.validate()) {
                   final amount = double.tryParse(
                     amountController.text.replaceAll(',', '.').trim(),
+                  )!;
+                  cubit.addBudget(
+                    categoryId: selectedCategoryId!,
+                    amount: amount,
                   );
-                  if (amount != null) {
-                    cubit.addBudget(
-                      categoryId: selectedCategoryId!,
-                      amount: amount,
-                    );
-                    Navigator.pop(dialogContext);
-                  }
+                  Navigator.pop(dialogContext);
                 }
               },
               child: Text(isVi ? "Lưu" : "Save"),

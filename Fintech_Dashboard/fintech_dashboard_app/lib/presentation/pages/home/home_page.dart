@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../../../domain/entities/budget_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../bloc/budget/budget_cubit.dart';
@@ -8,9 +10,13 @@ import '../../bloc/budget/budget_state.dart';
 import '../../bloc/dashboard/dashboard_cubit.dart';
 import '../../bloc/dashboard/dashboard_state.dart';
 import '../../bloc/setting/settings_cubit.dart';
+import '../../../core/utils/app_icons.dart';
+import '../transaction/add_edit_transaction_page.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final VoidCallback onViewAllTransactions;
+
+  const HomePage({super.key, required this.onViewAllTransactions});
 
   @override
   Widget build(BuildContext context) {
@@ -53,22 +59,50 @@ class HomePage extends StatelessWidget {
             ),
 
             // Biểu đồ tròn chi tiêu
-            _buildExpensePieChart(state.transactions, isVi),
+            _buildExpensePieChart(
+              context,
+              state.transactions,
+              totalExpense,
+              isVi,
+            ),
 
             // Biểu đồ ngân sách
-            _buildBudgetBarChart(context, isVi),
+            BlocBuilder<BudgetCubit, BudgetState>(
+              builder: (context, budgetState) {
+                if (budgetState.isLoading && budgetState.budgets.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                if (budgetState.budgets.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                // Use data from BudgetState for the budget chart for consistency
+                return _buildBudgetBarChart(
+                  context,
+                  budgetState.budgets,
+                  budgetState.transactions,
+                  budgetState.categories,
+                  isVi,
+                );
+              },
+            ),
 
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  isVi ? "Giao dịch gần đây" : "Recent Transactions",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    isVi ? "Giao dịch gần đây" : "Recent Transactions",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: onViewAllTransactions,
+                    child: Text(isVi ? 'Xem tất cả' : 'See all'),
+                  ),
+                ],
               ),
             ),
 
@@ -94,28 +128,59 @@ class HomePage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final tx = state.transactions[index];
                       final isIncome = tx.categoryType == 'income';
-                      final color = isIncome ? Colors.green : Colors.red;
-                      final icon = isIncome
-                          ? Icons.arrow_upward
-                          : Icons.arrow_downward;
+                      final color = isIncome
+                          ? Colors.green.shade600
+                          : Colors.red.shade600;
+                      final icon = AppIcons.getIconFromString(tx.categoryIcon);
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: color.shade100,
-                          child: Icon(icon, color: color),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
                         ),
-                        title: Text(
-                          tx.note.isNotEmpty
-                              ? tx.note
-                              : (tx.categoryName ??
-                                    (isVi ? 'Giao dịch' : 'Transaction')),
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        subtitle: Text(tx.date.toString().split(' ')[0]),
-                        trailing: Text(
-                          "${isIncome ? '+' : '-'}${tx.amount.toStringAsFixed(0)}đ",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: color,
+                        child: ListTile(
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    AddEditTransactionPage(transaction: tx),
+                              ),
+                            );
+                            if (result == true && context.mounted) {
+                              context
+                                  .read<DashboardCubit>()
+                                  .loadDashboardData();
+                              context.read<BudgetCubit>().loadBudgetData();
+                            }
+                          },
+                          leading: CircleAvatar(
+                            backgroundColor: color.withOpacity(0.1),
+                            child: Icon(icon, color: color, size: 20),
+                          ),
+                          title: Text(
+                            tx.categoryName ??
+                                (isVi ? 'Chưa phân loại' : 'Uncategorized'),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: tx.note.isNotEmpty
+                              ? Text(
+                                  tx.note,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : null,
+                          trailing: Text(
+                            "${isIncome ? '+' : '-'}${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(tx.amount)}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       );
@@ -142,6 +207,13 @@ class HomePage extends StatelessWidget {
           colors: [Colors.blue, Colors.blueAccent],
         ),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +317,9 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildExpensePieChart(
+    BuildContext context,
     List<TransactionEntity> transactions,
+    double totalExpense,
     bool isVi,
   ) {
     // 1. Lọc và nhóm dữ liệu chi tiêu (Expense)
@@ -253,22 +327,19 @@ class HomePage extends StatelessWidget {
         .where((t) => t.categoryType == 'expense')
         .toList();
 
-    if (expenses.isEmpty) {
+    if (expenses.isEmpty || totalExpense == 0) {
       return const SizedBox.shrink();
     }
 
     final Map<String, double> dataMap = {};
-    double totalExpense = 0;
-
     for (var tx in expenses) {
       final catName = tx.categoryName ?? (isVi ? 'Khác' : 'Other');
       dataMap[catName] = (dataMap[catName] ?? 0) + tx.amount;
-      totalExpense += tx.amount;
     }
 
     // Sắp xếp giảm dần theo số tiền
-    final sortedKeys = dataMap.keys.toList()
-      ..sort((a, b) => dataMap[b]!.compareTo(dataMap[a]!));
+    final sortedKeys = dataMap.keys.toList();
+    sortedKeys.sort((a, b) => dataMap[b]!.compareTo(dataMap[a]!));
 
     // Danh sách màu sắc để hiển thị
     final List<Color> colors = [
@@ -289,6 +360,7 @@ class HomePage extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               isVi ? 'Chi tiêu theo danh mục' : 'Expenses by Category',
@@ -301,30 +373,40 @@ class HomePage extends StatelessWidget {
                 SizedBox(
                   height: 150,
                   width: 150,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 30,
-                      sections: sortedKeys.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final key = entry.value;
-                        final value = dataMap[key]!;
-                        final color = colors[index % colors.length];
-                        final percentage = (value / totalExpense * 100);
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 750),
+                    curve: Curves.easeOut,
+                    builder: (context, animationValue, child) {
+                      return PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 30,
+                          sections: sortedKeys.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final key = entry.value;
+                            final value = dataMap[key]!;
+                            final color = colors[index % colors.length];
+                            final percentage = (value / totalExpense * 100);
 
-                        return PieChartSectionData(
-                          color: color,
-                          value: value,
-                          title: '${percentage.toStringAsFixed(0)}%',
-                          radius: 40,
-                          titleStyle: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                            return PieChartSectionData(
+                              color: color, // Giữ màu sắc không đổi
+                              value:
+                                  value, // Giữ value không đổi để tỉ lệ luôn đúng
+                              title: '${percentage.toStringAsFixed(0)}%',
+                              radius:
+                                  50 *
+                                  animationValue, // Thay vào đó, animate bán kính
+                              titleStyle: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white.withOpacity(animationValue),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -332,9 +414,8 @@ class HomePage extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: sortedKeys.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final key = entry.value;
+                    children: sortedKeys.take(5).map((key) {
+                      final index = sortedKeys.indexOf(key);
                       final color = colors[index % colors.length];
                       final value = dataMap[key]!;
                       final percentage = (value / totalExpense * 100);
@@ -343,14 +424,7 @@ class HomePage extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 4.0),
                         child: Row(
                           children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                            Container(width: 12, height: 12, color: color),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -373,138 +447,159 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetBarChart(BuildContext context, bool isVi) {
-    return BlocBuilder<BudgetCubit, BudgetState>(
-      builder: (context, state) {
-        if (state.budgets.isEmpty) {
-          return const SizedBox.shrink();
-        }
+  Widget _buildBudgetBarChart(
+    BuildContext context,
+    List<BudgetEntity> budgets,
+    List<TransactionEntity> transactions,
+    List<CategoryEntity> categories,
+    bool isVi,
+  ) {
+    if (budgets.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-        final List<Map<String, dynamic>> chartData = [];
-        for (var budget in state.budgets) {
-          final category = state.categories.cast<CategoryEntity>().firstWhere(
-            (c) => c.id == budget.categoryId,
-            orElse: () => CategoryEntity(
-              id: -1,
-              name: isVi ? 'Khác' : 'Other',
-              type: 'expense',
-              icon: '',
-              updatedAt: DateTime.now(),
+    final List<Map<String, dynamic>> chartData = [];
+    // Không giới hạn số lượng ngân sách
+    for (var budget in budgets) {
+      final category = categories.cast<CategoryEntity>().firstWhere(
+        (c) => c.id == budget.categoryId,
+        orElse: () => CategoryEntity(
+          id: -1,
+          name: isVi ? 'Khác' : 'Other',
+          type: 'expense',
+          icon: '',
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final spent = transactions
+          .where(
+            (t) =>
+                t.categoryId == budget.categoryId &&
+                t.categoryType == 'expense',
+          )
+          .fold(0.0, (sum, t) => sum + t.amount);
+
+      chartData.add({
+        'name': category.name,
+        'limit': budget.amount,
+        'spent': spent,
+      });
+    }
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isVi ? 'Tiến độ ngân sách' : 'Budget Progress',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-          );
-
-          final spent = state.transactions
-              .where(
-                (t) =>
-                    t.categoryId == budget.categoryId &&
-                    t.categoryType == 'expense',
-              )
-              .fold(0.0, (sum, t) => sum + t.amount);
-
-          chartData.add({
-            'name': category.name,
-            'limit': budget.amount,
-            'spent': spent,
-          });
-        }
-
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  isVi ? 'Tiến độ ngân sách' : 'Budget Progress',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                AspectRatio(
-                  aspectRatio: 1.5,
-                  child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      barTouchData: BarTouchData(
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (_) => Colors.blueGrey,
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (value, meta) {
-                              if (value.toInt() >= 0 &&
-                                  value.toInt() < chartData.length) {
-                                final name =
-                                    chartData[value.toInt()]['name'] as String;
-                                return Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Text(
-                                    name.length > 4
-                                        ? '${name.substring(0, 4)}..'
-                                        : name,
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: chartData.length * 60.0,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 750),
+                    curve: Curves.easeOut,
+                    builder: (context, animationValue, child) {
+                      return BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          barTouchData: BarTouchData(
+                            enabled: animationValue == 1.0,
+                            touchTooltipData: BarTouchTooltipData(
+                              getTooltipColor: (_) => Colors.blueGrey,
+                            ),
                           ),
-                        ),
-                        leftTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      gridData: const FlGridData(show: false),
-                      barGroups: chartData.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final data = entry.value;
-                        final limit = data['limit'] as double;
-                        final spent = data['spent'] as double;
-                        final isOver = spent > limit;
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  final index = value.toInt();
+                                  if (index >= 0 && index < chartData.length) {
+                                    final name =
+                                        chartData[index]['name'] as String;
+                                    return SideTitleWidget(
+                                      meta: meta,
+                                      space: 4.0,
+                                      child: Text(
+                                        name.length > 5
+                                            ? '${name.substring(0, 4)}...'
+                                            : name,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                    );
+                                  }
+                                  return const Text('');
+                                },
+                                reservedSize: 30,
+                              ),
+                            ),
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          gridData: const FlGridData(show: false),
+                          barGroups: chartData.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final data = entry.value;
+                            final limit = data['limit'] as double;
+                            final spent = data['spent'] as double;
+                            final isOver = spent > limit;
+                            final isWarning = !isOver && spent > (limit * 0.7);
 
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            BarChartRodData(
-                              toY: limit,
-                              color: Colors.grey.shade300,
-                              width: 10,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            BarChartRodData(
-                              toY: spent,
-                              color: isOver ? Colors.red : Colors.blue,
-                              width: 10,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: spent * animationValue,
+                                  color: isOver
+                                      ? Colors.red
+                                      : (isWarning
+                                            ? Colors.orange
+                                            : Colors.blue),
+                                  width: 22,
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(6),
+                                  ),
+                                  backDrawRodData: BackgroundBarChartRodData(
+                                    show: true,
+                                    toY: limit,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

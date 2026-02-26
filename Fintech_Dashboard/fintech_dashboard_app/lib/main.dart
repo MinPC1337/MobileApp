@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'injection_container.dart' as di;
 import 'presentation/bloc/auth/auth_cubit.dart';
@@ -29,6 +30,9 @@ void main() async {
   );
   // 3. Khởi tạo Dependency Injection (GetIt)
   await di.init();
+
+  // 4. Khởi tạo dữ liệu locale cho package intl để định dạng ngày tháng
+  await initializeDateFormatting();
 
   runApp(const MyApp());
 }

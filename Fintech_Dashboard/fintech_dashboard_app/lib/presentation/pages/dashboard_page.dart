@@ -22,13 +22,18 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Lắng nghe thay đổi ngôn ngữ
     final isVi =
         context.watch<SettingsCubit>().state.locale.languageCode == 'vi';
     final List<Widget> pages = [
-      const HomePage(),
+      HomePage(onViewAllTransactions: () => _onItemTapped(1)),
       const TransactionPage(),
       const BudgetPage(),
       const SettingsPage(),
@@ -43,7 +48,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_selectedIndex]),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Text(
+          titles[_selectedIndex],
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
         actions: [
           if (_selectedIndex == 0)
             IconButton(
@@ -74,29 +86,51 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body: pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType
-            .fixed, // Cố định icon để không bị hiệu ứng nhảy khi có >3 item
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home),
-            label: isVi ? "Trang chủ" : "Home",
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedItemColor: Theme.of(context).colorScheme.primary,
+            unselectedItemColor: Theme.of(
+              context,
+            ).textTheme.bodySmall?.color?.withOpacity(0.6),
+            items: [
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.home_rounded),
+                label: isVi ? "Trang chủ" : "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.swap_horiz_rounded),
+                label: isVi ? "Giao dịch" : "Transactions",
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.pie_chart_outline_rounded),
+                label: isVi ? "Ngân sách" : "Budget",
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.settings_rounded),
+                label: isVi ? "Cài đặt" : "Settings",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.list),
-            label: isVi ? "Giao dịch" : "Transactions",
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.pie_chart),
-            label: isVi ? "Ngân sách" : "Budget",
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.settings),
-            label: isVi ? "Cài đặt" : "Settings",
-          ),
-        ],
+        ),
       ),
       floatingActionButton:
           _selectedIndex ==

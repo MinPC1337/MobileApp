@@ -20,13 +20,14 @@ class TransactionFormCubit extends Cubit<TransactionFormState> {
     required String note,
     required int categoryId,
     required String userId,
+    required DateTime date,
   }) async {
     emit(TransactionFormLoading());
     try {
       final transaction = TransactionEntity(
         amount: amount,
         note: note,
-        date: DateTime.now(),
+        date: date,
         categoryId: categoryId,
         userId: userId,
         updatedAt: DateTime.now(),
@@ -45,6 +46,7 @@ class TransactionFormCubit extends Cubit<TransactionFormState> {
     required double amount,
     required String note,
     required int categoryId,
+    required DateTime date,
   }) async {
     emit(TransactionFormLoading());
     try {
@@ -52,7 +54,7 @@ class TransactionFormCubit extends Cubit<TransactionFormState> {
         id: originalTransaction.id, // Giữ lại ID cũ
         amount: amount,
         note: note,
-        date: originalTransaction.date, // Giữ lại ngày tạo ban đầu
+        date: date, // Cho phép cập nhật ngày
         categoryId: categoryId,
         userId: originalTransaction.userId,
         isSynced: originalTransaction.isSynced,

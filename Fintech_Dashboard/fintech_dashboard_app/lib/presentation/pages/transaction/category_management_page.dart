@@ -7,6 +7,7 @@ import '../../bloc/auth/auth_state.dart';
 import '../../bloc/category/category_cubit.dart';
 import '../../bloc/category/category_state.dart';
 import '../../bloc/setting/settings_cubit.dart';
+import '../../../core/utils/app_icons.dart';
 
 class CategoryManagementPage extends StatelessWidget {
   const CategoryManagementPage({super.key});
@@ -107,11 +108,14 @@ class CategoryManagementPage extends StatelessWidget {
                     );
                   },
                   child: ListTile(
-                    leading: Icon(
-                      isIncome
-                          ? Icons.arrow_circle_up
-                          : Icons.arrow_circle_down,
-                      color: isIncome ? Colors.green : Colors.red,
+                    leading: CircleAvatar(
+                      backgroundColor: (isIncome ? Colors.green : Colors.red)
+                          .withOpacity(0.1),
+                      child: Icon(
+                        AppIcons.getIconFromString(category.icon),
+                        color: isIncome ? Colors.green : Colors.red,
+                        size: 20,
+                      ),
                     ),
                     title: Text(category.name),
                     subtitle: Text(
@@ -120,7 +124,7 @@ class CategoryManagementPage extends StatelessWidget {
                           : (isVi ? 'Cá nhân' : 'Personal'),
                     ),
                     trailing: isDefault
-                        ? null
+                        ? null // Cannot edit default categories
                         : const Icon(Icons.edit, size: 20),
                     onTap: () {
                       if (!isDefault) {
@@ -160,54 +164,135 @@ class CategoryManagementPage extends StatelessWidget {
         context.read<SettingsCubit>().state.locale.languageCode == 'vi';
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: category?.name ?? '');
-    String type = category?.type ?? 'expense'; // Loại mặc định
+    String type = category?.type ?? 'expense';
+    String selectedIcon = category?.icon ?? 'default';
 
     showDialog(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: const EdgeInsets.all(16),
           title: Text(
             category == null
                 ? (isVi ? 'Thêm Danh mục mới' : 'Add New Category')
                 : (isVi ? 'Sửa Danh mục' : 'Edit Category'),
           ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: isVi ? 'Tên danh mục' : 'Category Name',
-                  ),
-                  validator: (value) => (value == null || value.isEmpty)
-                      ? (isVi ? 'Vui lòng nhập tên' : 'Please enter name')
-                      : null,
-                ),
-                StatefulBuilder(
-                  builder: (BuildContext context, StateSetter setState) {
-                    return DropdownButtonFormField<String>(
-                      initialValue: type,
-                      decoration: InputDecoration(
-                        labelText: isVi ? 'Loại' : 'Type',
-                      ),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'expense',
-                          child: Text(isVi ? 'Chi phí' : 'Expense'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              // Wrap the content in a Container to give the AlertDialog a specific size
+              // This prevents the "RenderViewport does not support returning intrinsic dimensions" error
+              return SizedBox(
+                width: double.maxFinite,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            labelText: isVi ? 'Tên danh mục' : 'Category Name',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          validator: (value) => (value == null || value.isEmpty)
+                              ? (isVi
+                                    ? 'Vui lòng nhập tên'
+                                    : 'Please enter name')
+                              : null,
                         ),
-                        DropdownMenuItem(
-                          value: 'income',
-                          child: Text(isVi ? 'Thu nhập' : 'Income'),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: type,
+                          decoration: InputDecoration(
+                            labelText: isVi ? 'Loại' : 'Type',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'expense',
+                              child: Text(isVi ? 'Chi phí' : 'Expense'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'income',
+                              child: Text(isVi ? 'Thu nhập' : 'Income'),
+                            ),
+                          ],
+                          onChanged: (value) => setState(() => type = value!),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          isVi ? 'Chọn biểu tượng' : 'Choose Icon',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 150,
+                          child: GridView.builder(
+                            itemCount: AppIcons.categoryIcons.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 5,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                ),
+                            itemBuilder: (context, index) {
+                              final iconName = AppIcons.categoryIcons.keys
+                                  .elementAt(index);
+                              final iconData = AppIcons.categoryIcons.values
+                                  .elementAt(index);
+                              final isSelected = selectedIcon == iconName;
+                              return InkWell(
+                                onTap: () =>
+                                    setState(() => selectedIcon = iconName),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.primaryContainer
+                                        : Theme.of(context)
+                                              .colorScheme
+                                              .surfaceVariant
+                                              .withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: isSelected
+                                        ? Border.all(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            width: 2,
+                                          )
+                                        : null,
+                                  ),
+                                  child: Icon(
+                                    iconData,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodyLarge?.color,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
-                      onChanged: (value) => setState(() => type = value!),
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -221,7 +306,7 @@ class CategoryManagementPage extends StatelessWidget {
                     cubit.addCategory(
                       name: nameController.text,
                       type: type,
-                      icon: 'default',
+                      icon: selectedIcon,
                     );
                   } else {
                     cubit.updateCategory(
@@ -229,7 +314,7 @@ class CategoryManagementPage extends StatelessWidget {
                         id: category.id,
                         name: nameController.text,
                         type: type,
-                        icon: category.icon,
+                        icon: selectedIcon,
                         userId: category.userId,
                         updatedAt: DateTime.now(),
                       ),

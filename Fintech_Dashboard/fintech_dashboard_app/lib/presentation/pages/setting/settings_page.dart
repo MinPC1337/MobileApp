@@ -32,215 +32,270 @@ class _SettingsPageState extends State<SettingsPage> {
     final isVi = settingsState.locale.languageCode == 'vi';
 
     return BlocBuilder<AuthCubit, AuthState>(
-      builder: (context, state) {
+      builder: (context, authState) {
+        if (authState is! AuthSuccess) {
+          // Hiển thị một widget trống hoặc loading nếu chưa đăng nhập thành công
+          return const Center(child: CircularProgressIndicator());
+        }
         return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
-            _buildAccountSection(context, state, isVi),
-            const Divider(thickness: 1, height: 32),
-            _buildDataSection(context, isVi),
-            const Divider(thickness: 1, height: 32),
-            _buildConfigSection(context, settingsState, isVi),
+            _buildSectionCard(
+              context: context,
+              title: isVi ? "Tài khoản" : "Account",
+              children: _buildAccountItems(context, authState, isVi),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionCard(
+              context: context,
+              title: isVi ? "Dữ liệu" : "Data",
+              children: _buildDataItems(context, isVi),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionCard(
+              context: context,
+              title: isVi ? "Cấu hình ứng dụng" : "App Configuration",
+              children: _buildConfigItems(context, settingsState, isVi),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionCard(
+              context: context,
+              title: isVi ? "Thông tin" : "Information",
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(isVi ? "Giới thiệu ứng dụng" : "About App"),
+                  onTap: () => _showAppAboutDialog(context),
+                ),
+              ],
+            ),
           ],
         );
       },
     );
   }
 
-  // 1. Nhóm chức năng Tài khoản
-  Widget _buildAccountSection(
-    BuildContext context,
-    AuthState state,
-    bool isVi,
-  ) {
-    if (state is! AuthSuccess) {
-      return const SizedBox.shrink();
-    }
-    final user = state.user;
-
+  // Helper widget để tạo một card cho mỗi section
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(8, 16, 8, 12),
           child: Text(
-            isVi ? "Tài khoản" : "Account",
-            style: TextStyle(
-              fontSize: 18,
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
-        ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.blue.shade100,
-            child: Text(
-              user.displayName.isNotEmpty
-                  ? user.displayName[0].toUpperCase()
-                  : "U",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: children.length,
+              itemBuilder: (context, index) => children[index],
+              separatorBuilder: (context, index) => Divider(
+                height: 1,
+                indent: 72, // Căn lề cho divider
+                color: Theme.of(context).dividerColor.withOpacity(0.3),
               ),
             ),
           ),
-          title: Text(
-            user.displayName,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(user.email),
-          trailing: user.isEmailVerified
-              ? const Tooltip(
-                  message: "Verified",
-                  child: Icon(Icons.verified, color: Colors.green),
-                )
-              : const Tooltip(
-                  message: "Unverified",
-                  child: Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange,
-                  ),
-                ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.red),
-          title: Text(
-            isVi ? "Đăng xuất" : "Logout",
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
-          ),
-          onTap: () => _showLogoutDialog(context, isVi),
         ),
       ],
     );
   }
 
-  // 2. Nhóm chức năng Dữ liệu
-  Widget _buildDataSection(BuildContext context, bool isVi) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+  // 1. Các mục trong nhóm Tài khoản
+  List<Widget> _buildAccountItems(
+    BuildContext context,
+    AuthSuccess state,
+    bool isVi,
+  ) {
+    final user = state.user;
+
+    return [
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 10,
+        ),
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           child: Text(
-            isVi ? "Dữ liệu" : "Data",
+            user.displayName.isNotEmpty
+                ? user.displayName[0].toUpperCase()
+                : "U",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
             ),
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.delete_outline),
-          title: Text(isVi ? "Xóa dữ liệu local" : "Clear local data"),
-          subtitle: Text(
-            isVi
-                ? "Xóa bộ nhớ đệm trên thiết bị này"
-                : "Clear cache on this device",
-          ),
-          onTap: () => _showClearDataDialog(context, isVi),
+        title: Text(
+          user.displayName,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        ListTile(
-          leading: const Icon(Icons.upload_file, color: Colors.green),
-          title: Text(isVi ? "Xuất dữ liệu ra Excel" : "Export data to Excel"),
-          subtitle: Text(
-            isVi
-                ? "Lưu toàn bộ giao dịch vào file .xlsx"
-                : "Save all transactions to an .xlsx file",
-          ),
-          onTap: () {
-            final transactions = context
-                .read<DashboardCubit>()
-                .state
-                .transactions;
-            if (transactions.isNotEmpty) {
-              _exportToExcel(transactions, isVi);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isVi ? "Không có dữ liệu để xuất" : "No data to export",
-                  ),
+        subtitle: Text(user.email),
+        trailing: user.isEmailVerified
+            ? Tooltip(
+                message: isVi ? "Đã xác thực" : "Verified",
+                child: const Icon(Icons.verified, color: Colors.green),
+              )
+            : Tooltip(
+                message: isVi ? "Chưa xác thực" : "Unverified",
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
                 ),
-              );
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
-          title: Text(isVi ? "Xuất dữ liệu ra PDF" : "Export data to PDF"),
-          subtitle: Text(
-            isVi
-                ? "Tạo báo cáo giao dịch dưới dạng file .pdf"
-                : "Create a transaction report as a .pdf file",
+              ),
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: const Icon(Icons.logout, color: Colors.red),
+        title: Text(
+          isVi ? "Đăng xuất" : "Logout",
+          style: const TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
           ),
-          onTap: () {
-            final transactions = context
-                .read<DashboardCubit>()
-                .state
-                .transactions;
-            if (transactions.isNotEmpty) {
-              _exportToPdf(transactions, isVi);
-            }
-          },
         ),
-      ],
-    );
+        onTap: () => _showLogoutDialog(context, isVi),
+      ),
+    ];
   }
 
-  // 3. Nhóm chức năng Cấu hình ứng dụng
-  Widget _buildConfigSection(
+  // 2. Các mục trong nhóm Dữ liệu
+  List<Widget> _buildDataItems(BuildContext context, bool isVi) {
+    return [
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: const Icon(Icons.upload_file, color: Colors.green),
+        title: Text(isVi ? "Xuất dữ liệu ra Excel" : "Export data to Excel"),
+        subtitle: Text(
+          isVi
+              ? "Lưu toàn bộ giao dịch vào file .xlsx"
+              : "Save all transactions to an .xlsx file",
+        ),
+        onTap: () {
+          final transactions = context
+              .read<DashboardCubit>()
+              .state
+              .transactions;
+          if (transactions.isNotEmpty) {
+            _exportToExcel(transactions, isVi);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isVi ? "Không có dữ liệu để xuất" : "No data to export",
+                ),
+              ),
+            );
+          }
+        },
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+        title: Text(isVi ? "Xuất dữ liệu ra PDF" : "Export data to PDF"),
+        subtitle: Text(
+          isVi
+              ? "Tạo báo cáo giao dịch dưới dạng file .pdf"
+              : "Create a transaction report as a .pdf file",
+        ),
+        onTap: () {
+          final transactions = context
+              .read<DashboardCubit>()
+              .state
+              .transactions;
+          if (transactions.isNotEmpty) {
+            _exportToPdf(transactions, isVi);
+          }
+        },
+      ),
+    ];
+  }
+
+  // 3. Các mục trong nhóm Cấu hình
+  List<Widget> _buildConfigItems(
     BuildContext context,
     SettingsState settingsState,
     bool isVi,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(
-            isVi ? "Cấu hình ứng dụng" : "App Configuration",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
+    return [
+      SwitchListTile(
+        contentPadding: const EdgeInsets.only(
+          left: 20,
+          right: 16,
+          top: 8,
+          bottom: 8,
         ),
-        SwitchListTile(
-          secondary: const Icon(Icons.dark_mode_outlined),
-          title: Text(isVi ? "Chế độ tối (Dark Mode)" : "Dark Mode"),
-          value: settingsState.themeMode == ThemeMode.dark,
+        secondary: const Icon(Icons.dark_mode_outlined),
+        title: Text(isVi ? "Chế độ tối" : "Dark Mode"),
+        value: settingsState.themeMode == ThemeMode.dark,
+        onChanged: (val) {
+          context.read<SettingsCubit>().toggleTheme(val);
+        },
+      ),
+      ListTile(
+        contentPadding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 8,
+          bottom: 8,
+        ),
+        leading: const Icon(Icons.language_outlined),
+        title: Text(isVi ? "Ngôn ngữ" : "Language"),
+        trailing: DropdownButton<String>(
+          value: settingsState.locale.languageCode,
+          underline: Container(),
+          items: const [
+            DropdownMenuItem(value: 'vi', child: Text("Tiếng Việt")),
+            DropdownMenuItem(value: 'en', child: Text("English")),
+          ],
           onChanged: (val) {
-            context.read<SettingsCubit>().toggleTheme(val);
+            if (val != null) {
+              context.read<SettingsCubit>().changeLanguage(val);
+            }
           },
         ),
-        ListTile(
-          leading: const Icon(Icons.language),
-          title: Text(isVi ? "Ngôn ngữ" : "Language"),
-          trailing: DropdownButton<String>(
-            value: settingsState.locale.languageCode,
-            underline: Container(),
-            items: const [
-              DropdownMenuItem(value: 'vi', child: Text("Tiếng Việt")),
-              DropdownMenuItem(value: 'en', child: Text("English")),
-            ],
-            onChanged: (val) {
-              if (val != null) {
-                context.read<SettingsCubit>().changeLanguage(val);
-              }
-            },
-          ),
-        ),
-      ],
-    );
+      ),
+    ];
   }
 
   void _showLogoutDialog(BuildContext context, bool isVi) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28.0),
+        ),
         title: Text(isVi ? "Đăng xuất" : "Logout"),
         content: Text(
           isVi
@@ -265,40 +320,30 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showClearDataDialog(BuildContext context, bool isVi) {
-    showDialog(
+  void _showAppAboutDialog(BuildContext context) {
+    final isVi =
+        context.read<SettingsCubit>().state.locale.languageCode == 'vi';
+    showAboutDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isVi ? "Xóa dữ liệu local" : "Clear local data"),
-        content: Text(
-          isVi
-              ? "Hành động này sẽ xóa dữ liệu được lưu trên máy. Dữ liệu đã đồng bộ lên mây sẽ không bị mất. Bạn có muốn tiếp tục?"
-              : "This action will clear data stored on this device. Synced data on cloud will not be lost. Continue?",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(isVi ? "Hủy" : "Cancel"),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await context.read<AuthCubit>().clearLocalData();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isVi ? "Đã xóa dữ liệu local" : "Local data cleared",
-                    ),
-                  ),
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(isVi ? "Xóa" : "Clear"),
-          ),
-        ],
+      applicationName: 'Fintech Dashboard',
+      // Để lấy version động, bạn có thể dùng package `package_info_plus`
+      applicationVersion: '1.0.0',
+      applicationIcon: const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Icon(Icons.wallet_rounded, size: 48),
       ),
+      applicationLegalese: '© 2026 Fintech App',
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(top: 24, bottom: 8),
+          child: Text(
+            isVi
+                ? 'Một ứng dụng giúp bạn quản lý tài chính cá nhân một cách thông minh và hiệu quả.'
+                : 'An application to help you manage your personal finances smartly and effectively.',
+            textAlign: TextAlign.justify,
+          ),
+        ),
+      ],
     );
   }
 
