@@ -47,146 +47,161 @@ class HomePage extends StatelessWidget {
             totalExpense += tx.amount;
           }
         }
-
-        return ListView(
-          children: [
-            // Phần hiển thị Số dư (Balance Card)
-            _buildBalanceCard(
-              state.totalBalance,
-              totalIncome,
-              totalExpense,
-              isVi,
-            ),
-
-            // Biểu đồ tròn chi tiêu
-            _buildExpensePieChart(
-              context,
-              state.transactions,
-              totalExpense,
-              isVi,
-            ),
-
-            // Biểu đồ ngân sách
-            BlocBuilder<BudgetCubit, BudgetState>(
-              builder: (context, budgetState) {
-                if (budgetState.isLoading && budgetState.budgets.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                if (budgetState.budgets.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-                // Use data from BudgetState for the budget chart for consistency
-                return _buildBudgetBarChart(
-                  context,
-                  budgetState.budgets,
-                  budgetState.transactions,
-                  budgetState.categories,
-                  isVi,
-                );
-              },
-            ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isVi ? "Giao dịch gần đây" : "Recent Transactions",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onViewAllTransactions,
-                    child: Text(isVi ? 'Xem tất cả' : 'See all'),
-                  ),
-                ],
+        return RefreshIndicator(
+          onRefresh: () async {
+            // Lấy các cubit trước khi thực hiện các tác vụ bất đồng bộ
+            // và chạy chúng song song để cải thiện hiệu suất.
+            final dashboardCubit = context.read<DashboardCubit>();
+            final budgetCubit = context.read<BudgetCubit>();
+            await Future.wait([
+              dashboardCubit.loadDashboardData(),
+              budgetCubit.loadBudgetData(),
+            ]);
+          },
+          child: ListView(
+            children: [
+              // Phần hiển thị Số dư (Balance Card)
+              _buildBalanceCard(
+                state.totalBalance,
+                totalIncome,
+                totalExpense,
+                isVi,
               ),
-            ),
 
-            // Danh sách giao dịch
-            state.transactions.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 48.0),
-                    child: Center(
-                      child: Text(
-                        isVi
-                            ? "Chưa có giao dịch nào."
-                            : "No transactions yet.",
+              // Biểu đồ tròn chi tiêu
+              _buildExpensePieChart(
+                context,
+                state.transactions,
+                totalExpense,
+                isVi,
+              ),
+
+              // Biểu đồ ngân sách
+              BlocBuilder<BudgetCubit, BudgetState>(
+                builder: (context, budgetState) {
+                  if (budgetState.isLoading && budgetState.budgets.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  if (budgetState.budgets.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  // Use data from BudgetState for the budget chart for consistency
+                  return _buildBudgetBarChart(
+                    context,
+                    budgetState.budgets,
+                    budgetState.transactions,
+                    budgetState.categories,
+                    isVi,
+                  );
+                },
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isVi ? "Giao dịch gần đây" : "Recent Transactions",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    // Chỉ hiển thị tối đa 10 giao dịch gần nhất
-                    itemCount: state.transactions.length > 5
-                        ? 5
-                        : state.transactions.length,
-                    itemBuilder: (context, index) {
-                      final tx = state.transactions[index];
-                      final isIncome = tx.categoryType == 'income';
-                      final color = isIncome
-                          ? Colors.green.shade600
-                          : Colors.red.shade600;
-                      final icon = AppIcons.getIconFromString(tx.categoryIcon);
+                    TextButton(
+                      onPressed: onViewAllTransactions,
+                      child: Text(isVi ? 'Xem tất cả' : 'See all'),
+                    ),
+                  ],
+                ),
+              ),
 
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
+              // Danh sách giao dịch
+              state.transactions.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 48.0),
+                      child: Center(
+                        child: Text(
+                          isVi
+                              ? "Chưa có giao dịch nào."
+                              : "No transactions yet.",
                         ),
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ListTile(
-                          onTap: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    AddEditTransactionPage(transaction: tx),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      // Chỉ hiển thị tối đa 10 giao dịch gần nhất
+                      itemCount: state.transactions.length > 5
+                          ? 5
+                          : state.transactions.length,
+                      itemBuilder: (context, index) {
+                        final tx = state.transactions[index];
+                        final isIncome = tx.categoryType == 'income';
+                        final color = isIncome
+                            ? Colors.green.shade600
+                            : Colors.red.shade600;
+                        final icon = AppIcons.getIconFromString(
+                          tx.categoryIcon,
+                        );
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: ListTile(
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      AddEditTransactionPage(transaction: tx),
+                                ),
+                              );
+                              if (result == true && context.mounted) {
+                                context
+                                    .read<DashboardCubit>()
+                                    .loadDashboardData();
+                                context.read<BudgetCubit>().loadBudgetData();
+                              }
+                            },
+                            leading: CircleAvatar(
+                              backgroundColor: color.withOpacity(0.1),
+                              child: Icon(icon, color: color, size: 20),
+                            ),
+                            title: Text(
+                              tx.categoryName ??
+                                  (isVi ? 'Chưa phân loại' : 'Uncategorized'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                               ),
-                            );
-                            if (result == true && context.mounted) {
-                              context
-                                  .read<DashboardCubit>()
-                                  .loadDashboardData();
-                              context.read<BudgetCubit>().loadBudgetData();
-                            }
-                          },
-                          leading: CircleAvatar(
-                            backgroundColor: color.withOpacity(0.1),
-                            child: Icon(icon, color: color, size: 20),
-                          ),
-                          title: Text(
-                            tx.categoryName ??
-                                (isVi ? 'Chưa phân loại' : 'Uncategorized'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: tx.note.isNotEmpty
-                              ? Text(
-                                  tx.note,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : null,
-                          trailing: Text(
-                            "${isIncome ? '+' : '-'}${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(tx.amount)}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: color,
-                              fontSize: 15,
+                            ),
+                            subtitle: tx.note.isNotEmpty
+                                ? Text(
+                                    tx.note,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                : null,
+                            trailing: Text(
+                              "${isIncome ? '+' : '-'}${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(tx.amount)}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-          ],
+                        );
+                      },
+                    ),
+            ],
+          ),
         );
       },
     );
