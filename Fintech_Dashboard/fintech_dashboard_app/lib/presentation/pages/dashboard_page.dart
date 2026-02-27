@@ -10,6 +10,7 @@ import 'setting/settings_page.dart';
 import 'transaction/transaction_page.dart';
 import 'transaction/category_management_page.dart';
 import 'transaction/add_edit_transaction_page.dart';
+import 'budget/budget_history_page.dart';
 import '../bloc/transaction/transaction_form_cubit.dart';
 import '../../injection_container.dart' as di;
 
@@ -349,6 +350,38 @@ class _DashboardPageState extends State<DashboardPage> {
                         context.read<BudgetCubit>().loadBudgetData();
                       }
                     });
+              },
+            ),
+          if (_selectedIndex == 2) // Budget Page
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: isVi ? 'Lịch sử Ngân sách' : 'Budget History',
+              onPressed: () {
+                final budgetState = context.read<BudgetCubit>().state;
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+
+                final expiredBudgets = budgetState.budgets.where((b) {
+                  final bEnd = DateTime(
+                    b.endDate.year,
+                    b.endDate.month,
+                    b.endDate.day,
+                  );
+                  return bEnd.isBefore(today);
+                }).toList();
+
+                // Sắp xếp theo ngày kết thúc, mới nhất lên đầu
+                expiredBudgets.sort((a, b) => b.endDate.compareTo(a.endDate));
+
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BudgetHistoryPage(
+                      expiredBudgets: expiredBudgets,
+                      categories: budgetState.categories,
+                      transactions: budgetState.transactions,
+                    ),
+                  ),
+                );
               },
             ),
         ],

@@ -7,6 +7,7 @@ import '../../bloc/budget/budget_cubit.dart';
 import '../../bloc/budget/budget_state.dart';
 import '../../bloc/setting/settings_cubit.dart';
 import '../../../core/utils/app_icons.dart';
+import 'budget_detail_page.dart';
 import '../transaction/category_management_page.dart';
 
 class BudgetPage extends StatelessWidget {
@@ -25,21 +26,150 @@ class BudgetPage extends StatelessWidget {
           if (state.errorMessage != null) {
             return Center(child: Text(state.errorMessage!));
           }
-          if (state.budgets.isEmpty) {
+
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+
+          final activeBudgets = state.budgets.where((b) {
+            final bEnd = DateTime(
+              b.endDate.year,
+              b.endDate.month,
+              b.endDate.day,
+            );
+            return !bEnd.isBefore(today);
+          }).toList();
+
+          if (activeBudgets.isEmpty) {
             return Center(
               child: Text(
                 isVi
-                    ? "Chưa có ngân sách nào được thiết lập."
-                    : "No budgets set yet.",
+                    ? "Chưa có ngân sách nào đang hoạt động."
+                    : "No active budgets set yet.",
               ),
             );
           }
 
+          // Tính toán tổng ngân sách và tổng chi tiêu cho tất cả ngân sách đang hoạt động
+          double totalLimit = 0;
+          double totalSpentAll = 0;
+
+          for (var budget in activeBudgets) {
+            totalLimit += budget.amount;
+            final bSpent = state.transactions
+                .where(
+                  (t) =>
+                      t.categoryId == budget.categoryId &&
+                      t.categoryType == 'expense' &&
+                      !t.date.isBefore(budget.startDate) &&
+                      t.date.isBefore(
+                        budget.endDate.add(const Duration(days: 1)),
+                      ),
+                )
+                .fold(0.0, (sum, t) => sum + t.amount);
+            totalSpentAll += bSpent;
+          }
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: state.budgets.length,
+            itemCount: activeBudgets.length + 1, // +1 cho thẻ tổng quan
             itemBuilder: (context, index) {
-              final budget = state.budgets[index];
+              if (index == 0) {
+                // Hiển thị thẻ tổng quan ở vị trí đầu tiên
+                final progress = totalLimit > 0
+                    ? (totalSpentAll / totalLimit).clamp(0.0, 1.0)
+                    : 0.0;
+                final isOver = totalSpentAll > totalLimit;
+                final percentage = totalLimit > 0
+                    ? (totalSpentAll / totalLimit) * 100
+                    : 0.0;
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isOver
+                          ? [Colors.red.shade400, Colors.red.shade700]
+                          : [Colors.blue.shade400, Colors.blue.shade700],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isOver ? Colors.red : Colors.blue).withOpacity(
+                          0.4,
+                        ),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isVi ? "Tổng ngân sách" : "Total Budget",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Colors.white.withOpacity(0.3),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                          minHeight: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            NumberFormat.currency(
+                              locale: isVi ? 'vi_VN' : 'en_US',
+                              symbol: 'đ',
+                              decimalDigits: 0,
+                            ).format(totalSpentAll),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            "${isVi ? 'của' : 'of'} ${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(totalLimit)}",
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "${percentage.toStringAsFixed(1)}%",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final budget = activeBudgets[index - 1];
 
               // 1. Tìm tên danh mục
               final category = state.categories
@@ -93,137 +223,169 @@ class BudgetPage extends StatelessWidget {
                 statusColor = Colors.blue;
               }
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+              return InkWell(
+                onTap: () {
+                  // 1. Lọc các giao dịch cho ngân sách này
+                  final budgetTransactions = state.transactions
+                      .where(
+                        (t) =>
+                            t.categoryId == budget.categoryId &&
+                            t.categoryType == 'expense' &&
+                            !t.date.isBefore(budget.startDate) &&
+                            t.date.isBefore(
+                              budget.endDate.add(const Duration(days: 1)),
+                            ),
+                      )
+                      .toList();
+
+                  // Sắp xếp theo ngày, mới nhất lên đầu
+                  budgetTransactions.sort((a, b) => b.date.compareTo(a.date));
+
+                  // 2. Điều hướng đến trang chi tiết
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => BudgetDetailPage(
+                        budget: budget,
+                        category: category,
+                        budgetTransactions: budgetTransactions,
+                        spentAmount: spentAmount,
+                      ),
                     ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
+                  );
+                },
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                AppIcons.getIconFromString(category.icon),
+                                color: statusColor,
+                              ),
                             ),
-                            child: Icon(
-                              AppIcons.getIconFromString(category.icon),
-                              color: statusColor,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    category.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.startDate)} - ${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.endDate)}",
+                                    style: TextStyle(
+                                      color: Theme.of(context).hintColor,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${percentage.toStringAsFixed(1)}%",
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.grey,
+                              ),
+                              onPressed: () => _confirmDelete(context, budget),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).dividerColor.withOpacity(0.1),
+                            color: statusColor,
+                            minHeight: 8,
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              NumberFormat.currency(
+                                locale: isVi ? 'vi_VN' : 'en_US',
+                                symbol: 'đ',
+                                decimalDigits: 0,
+                              ).format(spentAmount),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: statusColor,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              "${isVi ? 'Giới hạn' : 'Limit'}: ${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(budget.amount)}",
+                              style: TextStyle(
+                                color: Theme.of(context).hintColor,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (statusText.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12.0),
+                            child: Row(
                               children: [
-                                Text(
-                                  category.name,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 16,
+                                  color: statusColor,
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(width: 6),
                                 Text(
-                                  "${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.startDate)} - ${DateFormat.yMd(isVi ? 'vi_VN' : 'en_US').format(budget.endDate)}",
-                                  style: TextStyle(
-                                    color: Theme.of(context).hintColor,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  "${percentage.toStringAsFixed(1)}%",
+                                  statusText,
                                   style: TextStyle(
                                     color: statusColor,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () => _confirmDelete(context, budget),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          backgroundColor: Theme.of(
-                            context,
-                          ).dividerColor.withOpacity(0.1),
-                          color: statusColor,
-                          minHeight: 8,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            NumberFormat.currency(
-                              locale: isVi ? 'vi_VN' : 'en_US',
-                              symbol: 'đ',
-                              decimalDigits: 0,
-                            ).format(spentAmount),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: statusColor,
-                              fontSize: 15,
-                            ),
-                          ),
-                          Text(
-                            "${isVi ? 'Giới hạn' : 'Limit'}: ${NumberFormat.compactCurrency(locale: isVi ? 'vi_VN' : 'en_US', symbol: 'đ', decimalDigits: 0).format(budget.amount)}",
-                            style: TextStyle(
-                              color: Theme.of(context).hintColor,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (statusText.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                size: 16,
-                                color: statusColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                statusText,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -299,35 +461,61 @@ class BudgetPage extends StatelessWidget {
         .where((c) => c.type.trim().toLowerCase() == 'expense')
         .toList();
 
-    if (expenseCategories.isEmpty) {
+    // Lọc bỏ các danh mục đã có ngân sách đang hoạt động (chưa hết hạn)
+    final budgets = cubit.state.budgets;
+    final today = DateTime(now.year, now.month, now.day);
+    final activeCategoryIds = budgets
+        .where((b) {
+          final bEnd = DateTime(b.endDate.year, b.endDate.month, b.endDate.day);
+          // Ngân sách còn hạn nếu ngày kết thúc >= hôm nay
+          return !bEnd.isBefore(today);
+        })
+        .map((b) => b.categoryId)
+        .toSet();
+
+    final availableCategories = expenseCategories
+        .where((c) => !activeCategoryIds.contains(c.id))
+        .toList();
+
+    if (availableCategories.isEmpty) {
       final hasAnyCategories = categories.isNotEmpty;
-      final message = hasAnyCategories
-          ? (isVi
-                ? 'Bạn có ${categories.length} danh mục, nhưng không có danh mục nào là "Chi phí".'
-                : 'You have ${categories.length} categories, but none are "Expense".')
-          : (isVi
-                ? 'Chưa có danh mục chi tiêu nào để tạo ngân sách.'
-                : 'No expense categories available to create budget.');
+      String message;
+
+      if (expenseCategories.isEmpty) {
+        message = hasAnyCategories
+            ? (isVi
+                  ? 'Bạn có ${categories.length} danh mục, nhưng không có danh mục nào là "Chi phí".'
+                  : 'You have ${categories.length} categories, but none are "Expense".')
+            : (isVi
+                  ? 'Chưa có danh mục chi tiêu nào để tạo ngân sách.'
+                  : 'No expense categories available to create budget.');
+      } else {
+        message = isVi
+            ? 'Tất cả danh mục chi tiêu đã có ngân sách đang hoạt động.'
+            : 'All expense categories already have active budgets.';
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          action: SnackBarAction(
-            label: isVi ? 'Tạo ngay' : 'Create Now',
-            onPressed: () {
-              Navigator.of(context)
-                  .push(
-                    MaterialPageRoute(
-                      builder: (_) => const CategoryManagementPage(),
-                    ),
-                  )
-                  .then((_) {
-                    if (context.mounted) {
-                      context.read<BudgetCubit>().loadBudgetData();
-                    }
-                  });
-            },
-          ),
+          action: expenseCategories.isEmpty
+              ? SnackBarAction(
+                  label: isVi ? 'Tạo ngay' : 'Create Now',
+                  onPressed: () {
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => const CategoryManagementPage(),
+                          ),
+                        )
+                        .then((_) {
+                          if (context.mounted) {
+                            context.read<BudgetCubit>().loadBudgetData();
+                          }
+                        });
+                  },
+                )
+              : null,
         ),
       );
       return;
@@ -357,7 +545,7 @@ class BudgetPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      items: expenseCategories.map((c) {
+                      items: availableCategories.map((c) {
                         return DropdownMenuItem(
                           value: c.id,
                           child: Text(c.name),

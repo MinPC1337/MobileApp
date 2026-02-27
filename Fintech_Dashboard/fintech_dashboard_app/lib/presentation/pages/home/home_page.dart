@@ -469,13 +469,21 @@ class HomePage extends StatelessWidget {
     List<CategoryEntity> categories,
     bool isVi,
   ) {
-    if (budgets.isEmpty) {
+    // Lọc chỉ lấy các ngân sách đang hoạt động (chưa hết hạn)
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final activeBudgets = budgets.where((b) {
+      final bEnd = DateTime(b.endDate.year, b.endDate.month, b.endDate.day);
+      return !bEnd.isBefore(today);
+    }).toList();
+
+    if (activeBudgets.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final List<Map<String, dynamic>> chartData = [];
     // Không giới hạn số lượng ngân sách
-    for (var budget in budgets) {
+    for (var budget in activeBudgets) {
       final category = categories.cast<CategoryEntity>().firstWhere(
         (c) => c.id == budget.categoryId,
         orElse: () => CategoryEntity(
