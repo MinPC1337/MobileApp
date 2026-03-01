@@ -13,10 +13,17 @@ import '../../bloc/setting/settings_cubit.dart';
 import '../../../core/utils/app_icons.dart';
 import '../transaction/add_edit_transaction_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final VoidCallback onViewAllTransactions;
 
   const HomePage({super.key, required this.onViewAllTransactions});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  DateTime _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +44,17 @@ class HomePage extends StatelessWidget {
           );
         }
 
+        // Lọc giao dịch theo tháng đã chọn
+        final monthlyTransactions = state.transactions.where((tx) {
+          return tx.date.year == _selectedDate.year &&
+              tx.date.month == _selectedDate.month;
+        }).toList();
+
         // Tính toán tổng thu và tổng chi
         double totalIncome = 0;
         double totalExpense = 0;
-        for (var tx in state.transactions) {
+        // Chỉ tính tổng thu/chi cho tháng được chọn để hiển thị tương ứng
+        for (var tx in monthlyTransactions) {
           if (tx.categoryType == 'income') {
             totalIncome += tx.amount;
           } else {
@@ -60,6 +74,9 @@ class HomePage extends StatelessWidget {
           },
           child: ListView(
             children: [
+              // Widget chọn tháng
+              _buildMonthSelector(isVi),
+
               // Phần hiển thị Số dư (Balance Card)
               _buildBalanceCard(
                 state.totalBalance,
@@ -71,7 +88,7 @@ class HomePage extends StatelessWidget {
               // Biểu đồ tròn chi tiêu
               _buildExpensePieChart(
                 context,
-                state.transactions,
+                monthlyTransactions, // Truyền danh sách đã lọc theo tháng
                 totalExpense,
                 isVi,
               ),
@@ -109,7 +126,7 @@ class HomePage extends StatelessWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: onViewAllTransactions,
+                      onPressed: widget.onViewAllTransactions,
                       child: Text(isVi ? 'Xem tất cả' : 'See all'),
                     ),
                   ],
@@ -207,6 +224,55 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  Widget _buildMonthSelector(bool isVi) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () {
+              setState(() {
+                _selectedDate = DateTime(
+                  _selectedDate.year,
+                  _selectedDate.month - 1,
+                );
+              });
+            },
+          ),
+          Row(
+            children: [
+              const Icon(Icons.calendar_month, size: 20, color: Colors.blue),
+              const SizedBox(width: 8),
+              Text(
+                DateFormat(
+                  isVi ? 'MM/yyyy' : 'MMMM yyyy',
+                  isVi ? 'vi_VN' : 'en_US',
+                ).format(_selectedDate),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: () {
+              setState(() {
+                _selectedDate = DateTime(
+                  _selectedDate.year,
+                  _selectedDate.month + 1,
+                );
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBalanceCard(
     double balance,
     double income,
@@ -269,7 +335,7 @@ class HomePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isVi ? "Thu nhập" : "Income",
+                        isVi ? "Thu nhập (Tháng)" : "Income (Mo)",
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
@@ -306,7 +372,7 @@ class HomePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isVi ? "Chi tiêu" : "Expense",
+                        isVi ? "Chi tiêu (Tháng)" : "Expense (Mo)",
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
@@ -343,7 +409,23 @@ class HomePage extends StatelessWidget {
         .toList();
 
     if (expenses.isEmpty || totalExpense == 0) {
-      return const SizedBox.shrink();
+      // Hiển thị thông báo trống thay vì ẩn hoàn toàn để người dùng biết tháng này chưa có dữ liệu
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Center(
+            child: Text(
+              isVi
+                  ? 'Không có dữ liệu chi tiêu trong tháng này'
+                  : 'No expense data for this month',
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
     }
 
     final Map<String, double> dataMap = {};
@@ -469,12 +551,21 @@ class HomePage extends StatelessWidget {
     List<CategoryEntity> categories,
     bool isVi,
   ) {
-    // Lọc chỉ lấy các ngân sách đang hoạt động (chưa hết hạn)
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    // Xác định ngày đầu và cuối của tháng được chọn
+    final startOfMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    final endOfMonth = DateTime(
+      _selectedDate.year,
+      _selectedDate.month + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+
+    // Lọc các ngân sách có hiệu lực trong tháng được chọn (có giao nhau về thời gian)
     final activeBudgets = budgets.where((b) {
-      final bEnd = DateTime(b.endDate.year, b.endDate.month, b.endDate.day);
-      return !bEnd.isBefore(today);
+      return b.startDate.isBefore(endOfMonth) &&
+          b.endDate.isAfter(startOfMonth);
     }).toList();
 
     if (activeBudgets.isEmpty) {
@@ -495,11 +586,14 @@ class HomePage extends StatelessWidget {
         ),
       );
 
+      // Tính toán chi tiêu CHỈ trong tháng được chọn và nằm trong khoảng thời gian ngân sách
       final spent = transactions
           .where(
             (t) =>
                 t.categoryId == budget.categoryId && // Đúng danh mục
                 t.categoryType == 'expense' && // Là chi tiêu
+                t.date.year == _selectedDate.year && // Trong năm đã chọn
+                t.date.month == _selectedDate.month && // Trong tháng đã chọn
                 !t.date.isBefore(
                   budget.startDate,
                 ) && // Sau hoặc bằng ngày bắt đầu
@@ -576,8 +670,28 @@ class HomePage extends StatelessWidget {
                                 reservedSize: 30,
                               ),
                             ),
-                            leftTitles: const AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 40,
+                                getTitlesWidget: (value, meta) {
+                                  return SideTitleWidget(
+                                    meta: meta,
+                                    space: 4,
+                                    child: Text(
+                                      NumberFormat.compactCurrency(
+                                        locale: isVi ? 'vi_VN' : 'en_US',
+                                        symbol: '',
+                                        decimalDigits: 0,
+                                      ).format(value),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                             topTitles: const AxisTitles(
                               sideTitles: SideTitles(showTitles: false),
@@ -587,7 +701,16 @@ class HomePage extends StatelessWidget {
                             ),
                           ),
                           borderData: FlBorderData(show: false),
-                          gridData: const FlGridData(show: false),
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (value) {
+                              return FlLine(
+                                color: Colors.grey.withOpacity(0.2),
+                                strokeWidth: 1,
+                              );
+                            },
+                          ),
                           barGroups: chartData.asMap().entries.map((entry) {
                             final index = entry.key;
                             final data = entry.value;
