@@ -109,10 +109,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     );
 
     // 2. Cố gắng xóa khỏi Firestore.
-    // Ghi chú: Để có một hệ thống offline-first hoàn hảo cho việc xóa,
-    // cần một cơ chế "soft-delete" hoặc một hàng đợi xóa riêng.
-    // Tuy nhiên, với yêu cầu hiện tại, việc xóa trực tiếp và chấp nhận
-    // rủi ro mất đồng bộ khi offline là một giải pháp đơn giản hơn.
     try {
       await remoteDataSource
           .deleteTransaction(transaction.userId, transaction.id.toString())

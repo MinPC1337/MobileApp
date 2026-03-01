@@ -27,8 +27,6 @@ class DashboardCubit extends Cubit<DashboardState> {
       // 3. Tính toán số dư
       double balance = 0;
       for (var tx in transactions) {
-        // Cải tiến: Dựa vào 'type' của category thay vì ID cứng.
-        // Giả định TransactionEntity giờ có thuộc tính 'categoryType'.
         if (tx.categoryType == 'income') {
           balance += tx.amount;
         } else {

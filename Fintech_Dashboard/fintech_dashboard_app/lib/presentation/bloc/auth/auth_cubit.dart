@@ -49,10 +49,6 @@ class AuthCubit extends Cubit<AuthState> {
     // Lắng nghe luồng sự kiện thay đổi trạng thái đăng nhập (Login/Logout/Khôi phục session)
     _authSubscription = getAuthStateStreamUseCase().listen((user) async {
       if (user != null) {
-        // Đồng bộ dữ liệu đang chờ khi khởi động app hoặc khôi phục session
-        // await categoryRepository.syncPendingCategories(userId: user.id);
-        // await transactionRepository.syncPendingTransactions(userId: user.id);
-        // await budgetRepository.syncPendingBudgets(userId: user.id);
         emit(AuthSuccess(user)); // Chuyển trạng thái ngay lập tức
       } else {
         if (!isClosed) emit(AuthUnauthenticated());
@@ -87,8 +83,6 @@ class AuthCubit extends Cubit<AuthState> {
       }
       emit(AuthFailure(message));
     } catch (e) {
-      // Bắt các lỗi chung khác từ UseCase hoặc Repository
-      // Xóa "Exception: " khỏi thông báo lỗi
       final errorMessage = e.toString().replaceFirst('Exception: ', '');
       emit(AuthFailure(errorMessage));
     }
@@ -101,10 +95,6 @@ class AuthCubit extends Cubit<AuthState> {
       final user = await signInUseCase(email, password);
       if (user != null) {
         if (user.isEmailVerified) {
-          // Đồng bộ dữ liệu đang chờ sau khi đăng nhập thành công
-          // await categoryRepository.syncPendingCategories(userId: user.id);
-          // await transactionRepository.syncPendingTransactions(userId: user.id);
-          // await budgetRepository.syncPendingBudgets(userId: user.id);
           emit(AuthSuccess(user)); // Chuyển trạng thái ngay lập tức
         } else {
           // Nếu chưa xác thực email, đăng xuất và báo lỗi

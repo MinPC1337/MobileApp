@@ -14,7 +14,6 @@ class DashboardState extends Equatable {
     this.errorMessage,
   });
 
-  // Hàm copyWith giúp tạo ra trạng thái mới từ trạng thái cũ mà không làm mất các dữ liệu hiện có
   DashboardState copyWith({
     bool? isLoading,
     double? totalBalance,
